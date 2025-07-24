@@ -3,7 +3,8 @@ import CoreData
 
 @main
 struct IntraHabitsApp: App {
-    let persistenceController = PersistenceController.shared
+    @StateObject private var persistenceController = PersistenceController.shared
+    @State private var persistenceError: Error?
     
     var body: some Scene {
         WindowGroup {
@@ -13,6 +14,12 @@ struct IntraHabitsApp: App {
                 .preferredColorScheme(.dark)
                 .onAppear {
                     setupAppearance()
+                    persistenceError = persistenceController.loadError
+                }
+                .alert("Persistence Error", isPresented: Binding(get: { persistenceError != nil }, set: { _ in persistenceError = nil })) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text(persistenceError?.localizedDescription ?? "Unknown error")
                 }
         }
     }
@@ -50,8 +57,10 @@ struct IntraHabitsApp: App {
 }
 
 // MARK: - Persistence Controller
-class PersistenceController {
+class PersistenceController: ObservableObject {
     static let shared = PersistenceController()
+
+    @Published var loadError: Error?
     
     static var preview: PersistenceController = {
         let result = PersistenceController(inMemory: true)
@@ -77,26 +86,48 @@ class PersistenceController {
     }()
     
     let container: NSPersistentCloudKitContainer
-    
+
     init(inMemory: Bool = false) {
-        container = NSPersistentCloudKitContainer(name: "DataModel")
-        
+        var persistentContainer = NSPersistentCloudKitContainer(name: "DataModel")
+
         if inMemory {
-            container.persistentStoreDescriptions.first!.url = URL(fileURLWithPath: "/dev/null")
+            persistentContainer.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
         } else {
             // Configure CloudKit
-            let storeDescription = container.persistentStoreDescriptions.first
+            let storeDescription = persistentContainer.persistentStoreDescriptions.first
             storeDescription?.setOption(true as NSNumber, forKey: NSPersistentHistoryTrackingKey)
             storeDescription?.setOption(true as NSNumber, forKey: NSPersistentStoreRemoteChangeNotificationPostOptionKey)
         }
-        
-        container.loadPersistentStores { _, error in
-            if let error = error as NSError? {
-                fatalError("Unresolved error \(error), \(error.userInfo)")
+
+        var loadError: Error?
+        persistentContainer.loadPersistentStores { _, error in
+            loadError = error
+        }
+
+        if let error = loadError {
+            self.loadError = error
+            // Fallback: disable CloudKit and retry with a local store
+            persistentContainer = NSPersistentCloudKitContainer(name: "DataModel")
+            let description = persistentContainer.persistentStoreDescriptions.first
+            if inMemory {
+                description?.url = URL(fileURLWithPath: "/dev/null")
+            } else {
+                description?.cloudKitContainerOptions = nil
+            }
+
+            persistentContainer.loadPersistentStores { _, fallbackError in
+                if let fallbackError = fallbackError {
+                    self.loadError = fallbackError
+                    // Final fallback to an in-memory store
+                    persistentContainer = NSPersistentCloudKitContainer(name: "DataModel")
+                    persistentContainer.persistentStoreDescriptions.first?.url = URL(fileURLWithPath: "/dev/null")
+                    persistentContainer.loadPersistentStores { _, _ in }
+                }
             }
         }
-        
-        container.viewContext.automaticallyMergesChangesFromParent = true
+
+        persistentContainer.viewContext.automaticallyMergesChangesFromParent = true
+        container = persistentContainer
     }
 }
 
