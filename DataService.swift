@@ -46,9 +46,9 @@ class CoreDataService: DataServiceProtocol {
             countRequest.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
             let existingCount = try self.context.count(for: countRequest)
 
-            // TODO: Check premium subscription status from StoreKitService
-            let hasUnlimitedActivities = StoreKitService.shared.hasUnlimitedActivities
-            if existingCount >= 5 && !hasUnlimitedActivities {
+            // Verify purchase status before enforcing the free activity limit
+            let storeKitService = StoreKitService.shared
+            if !storeKitService.canAddMoreActivities(currentCount: existingCount) {
                 throw DataServiceError.activityLimitReached
             }
 
