@@ -45,7 +45,7 @@ class StoreKitService: ObservableObject {
             
         } catch {
             errorMessage = "Failed to load products: \(error.localizedDescription)"
-            print("Error loading products: \(error)")
+            AppLogger.error("Error loading products: \(error)")
         }
         
         isLoading = false
@@ -85,7 +85,7 @@ class StoreKitService: ObservableObject {
             
         } catch {
             errorMessage = "Purchase failed: \(error.localizedDescription)"
-            print("Purchase error: \(error)")
+            AppLogger.error("Purchase error: \(error)")
             return .failed(error)
         }
     }
@@ -107,7 +107,7 @@ class StoreKitService: ObservableObject {
             
         } catch {
             errorMessage = "Restore failed: \(error.localizedDescription)"
-            print("Restore error: \(error)")
+            AppLogger.error("Restore error: \(error)")
             return .failed(error)
         }
     }
@@ -130,7 +130,7 @@ class StoreKitService: ObservableObject {
                 let transaction = try checkVerified(result)
                 purchasedProducts.insert(transaction.productID)
             } catch {
-                print("Transaction verification failed: \(error)")
+                AppLogger.error("Transaction verification failed: \(error)")
             }
         }
         
@@ -156,7 +156,7 @@ class StoreKitService: ObservableObject {
                     
                     await transaction.finish()
                 } catch {
-                    print("Transaction update error: \(error)")
+                    AppLogger.error("Transaction update error: \(error)")
                 }
             }
         }

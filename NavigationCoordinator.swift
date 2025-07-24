@@ -95,13 +95,13 @@ class NavigationCoordinator: ObservableObject {
                let activityId = UUID(uuidString: activityIdString) {
                 // Navigate to specific activity
                 // This would require fetching the activity from Core Data
-                print("Deep link to activity: \(activityId)")
+                AppLogger.info("Deep link to activity: \(activityId)")
             }
         case "timer":
             if let activityIdString = components.queryItems?.first(where: { $0.name == "id" })?.value,
                let activityId = UUID(uuidString: activityIdString) {
                 // Navigate to timer for specific activity
-                print("Deep link to timer for activity: \(activityId)")
+                AppLogger.info("Deep link to timer for activity: \(activityId)")
             }
         case "add":
             presentAddActivity()

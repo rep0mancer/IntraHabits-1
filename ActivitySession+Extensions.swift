@@ -238,7 +238,7 @@ extension ActivitySession {
             let sessions = try context.fetch(request)
             return sessions.reduce(0) { $0 + $1.duration }
         } catch {
-            print("Error fetching sessions for total duration: \(error)")
+            AppLogger.error("Error fetching sessions for total duration: \(error)")
             return 0
         }
     }
@@ -250,7 +250,7 @@ extension ActivitySession {
             let sessions = try context.fetch(request)
             return sessions.reduce(0) { $0 + $1.numericValue }
         } catch {
-            print("Error fetching sessions for total count: \(error)")
+            AppLogger.error("Error fetching sessions for total count: \(error)")
             return 0
         }
     }
@@ -265,7 +265,7 @@ extension ActivitySession {
             let totalDuration = sessions.reduce(0) { $0 + $1.duration }
             return totalDuration / Double(sessions.count)
         } catch {
-            print("Error fetching sessions for average duration: \(error)")
+            AppLogger.error("Error fetching sessions for average duration: \(error)")
             return 0
         }
     }
@@ -276,7 +276,7 @@ extension ActivitySession {
         do {
             return try context.count(for: request)
         } catch {
-            print("Error counting sessions: \(error)")
+            AppLogger.error("Error counting sessions: \(error)")
             return 0
         }
     }

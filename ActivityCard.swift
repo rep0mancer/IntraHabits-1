@@ -205,7 +205,7 @@ class ActivityCardViewModel: ObservableObject {
             impactFeedback.impactOccurred()
             
         } catch {
-            print("Error saving session: \(error)")
+            AppLogger.error("Error saving session: \(error)")
         }
     }
     

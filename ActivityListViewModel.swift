@@ -97,7 +97,7 @@ class ActivityCardViewModel: ObservableObject {
             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
             impactFeedback.impactOccurred()
         } catch {
-            print("Error saving session: \(error)")
+            AppLogger.error("Error saving session: \(error)")
         }
     }
     
@@ -124,7 +124,7 @@ class ActivityCardViewModel: ObservableObject {
                 formattedDuration = formatDuration(totalDuration)
             }
         } catch {
-            print("Error fetching sessions: \(error)")
+            AppLogger.error("Error fetching sessions: \(error)")
         }
     }
     

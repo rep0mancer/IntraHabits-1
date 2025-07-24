@@ -52,6 +52,13 @@ struct TimerView: View {
         } message: {
             Text("timer.save.message")
         }
+        .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+            Button("OK") { viewModel.errorMessage = nil }
+        } message: {
+            if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
+            }
+        }
     }
     
     // MARK: - Header Section
@@ -241,6 +248,7 @@ class TimerViewModel: ObservableObject {
     @Published var timerState: TimerState = .stopped
     @Published var todaysFormattedTotal = "0m"
     @Published var showingSaveConfirmation = false
+    @Published var errorMessage: String?
     
     private var activity: Activity?
     private var viewContext: NSManagedObjectContext?
@@ -342,7 +350,8 @@ class TimerViewModel: ObservableObject {
             notificationFeedback.notificationOccurred(.success)
             
         } catch {
-            print("Error saving timer session: \(error)")
+            AppLogger.error("Error saving timer session: \(error)")
+            errorMessage = error.localizedDescription
         }
     }
     
