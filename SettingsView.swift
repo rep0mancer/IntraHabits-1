@@ -194,7 +194,7 @@ struct SettingsView: View {
                     title: "settings.privacy.title",
                     subtitle: "settings.privacy.subtitle",
                     action: {
-                        if let url = URL(string: "https://example.com/privacy") {
+                        if let url = URL(string: "https://yourcompany.com/privacy") {
                             UIApplication.shared.open(url)
                         }
                     }
