@@ -7,15 +7,19 @@ class WidgetTimerService: ObservableObject {
     
     private let userDefaults: UserDefaults
     private let appGroupIdentifier = "group.com.intrahabits.shared"
+    private(set) var isEnabled = true
     
     private var timerStates: [String: WidgetTimerState] = [:]
     
     private init() {
-        guard let sharedDefaults = UserDefaults(suiteName: appGroupIdentifier) else {
-            fatalError("Unable to create shared UserDefaults")
+        if let sharedDefaults = UserDefaults(suiteName: appGroupIdentifier) {
+            self.userDefaults = sharedDefaults
+            loadTimerStates()
+        } else {
+            self.userDefaults = UserDefaults.standard
+            self.isEnabled = false
+            print("WidgetTimerService: Unable to create shared UserDefaults. Timer widgets are disabled.")
         }
-        self.userDefaults = sharedDefaults
-        loadTimerStates()
     }
     
     // MARK: - Timer State Management
