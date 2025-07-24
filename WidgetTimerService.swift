@@ -127,20 +127,24 @@ class WidgetTimerService: ObservableObject {
     
     // MARK: - Persistence
     private func loadTimerStates() {
-        guard let data = userDefaults.data(forKey: "widget_timer_states"),
-              let decoded = try? JSONDecoder().decode([String: TimerStateData].self, from: data) else {
+        guard let data = userDefaults.data(forKey: "widget_timer_states") else {
             return
         }
-        
-        timerStates = decoded.mapValues { data in
-            WidgetTimerState(
-                activityId: data.activityId,
-                isRunning: data.isRunning,
-                isPaused: data.isPaused,
-                startTime: data.startTime,
-                pausedDuration: data.pausedDuration,
-                totalDuration: data.totalDuration
-            )
+
+        do {
+            let decoded = try JSONDecoder().decode([String: TimerStateData].self, from: data)
+            timerStates = decoded.mapValues { data in
+                WidgetTimerState(
+                    activityId: data.activityId,
+                    isRunning: data.isRunning,
+                    isPaused: data.isPaused,
+                    startTime: data.startTime,
+                    pausedDuration: data.pausedDuration,
+                    totalDuration: data.totalDuration
+                )
+            }
+        } catch {
+            AppLogger.error("WidgetTimerService: Failed to decode timer states - \(error.localizedDescription)")
         }
     }
     
