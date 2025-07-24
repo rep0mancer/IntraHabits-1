@@ -1,0 +1,32 @@
+erDiagram
+    Activity {
+        UUID id PK
+        string name
+        string type
+        string color
+        date createdAt
+        date updatedAt
+        boolean isActive
+        int32 sortOrder
+    }
+    
+    ActivitySession {
+        UUID id PK
+        UUID activityId FK
+        date sessionDate
+        double duration
+        double numericValue
+        boolean isCompleted
+        date createdAt
+        date updatedAt
+    }
+    
+    Activity ||--o{ ActivitySession : "has many"
+    
+    %% Notes
+    %% Activity.type can be "numeric" or "timer"
+    %% Activity.color is hex color code (e.g., "#CD3A2E")
+    %% ActivitySession.duration is in seconds for timer activities
+    %% ActivitySession.numericValue is the count for numeric activities
+    %% Both entities support CloudKit sync via NSPersistentCloudKitContainer
+

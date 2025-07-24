@@ -1,0 +1,102 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "IntraHabits Export Data",
+  "description": "Schema for IntraHabits app data export",
+  "type": "object",
+  "properties": {
+    "exportDate": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO 8601 timestamp when the export was created"
+    },
+    "activities": {
+      "type": "array",
+      "description": "List of all activities",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the activity"
+          },
+          "name": {
+            "type": "string",
+            "description": "Display name of the activity"
+          },
+          "type": {
+            "type": "string",
+            "enum": ["numeric", "timer"],
+            "description": "Type of activity tracking"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9A-Fa-f]{6}$",
+            "description": "Hex color code for the activity"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp when activity was created"
+          },
+          "isActive": {
+            "type": "boolean",
+            "description": "Whether the activity is currently active"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "description": "Display order of the activity"
+          }
+        },
+        "required": ["id", "name", "type", "color", "createdAt", "isActive", "sortOrder"]
+      }
+    },
+    "sessions": {
+      "type": "array",
+      "description": "List of all activity sessions",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Unique identifier for the session"
+          },
+          "activityId": {
+            "type": "string",
+            "format": "uuid",
+            "description": "ID of the associated activity"
+          },
+          "sessionDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp when session occurred"
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Duration in seconds (for timer activities)"
+          },
+          "numericValue": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Numeric value (for numeric activities)"
+          },
+          "isCompleted": {
+            "type": "boolean",
+            "description": "Whether the session was completed"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "ISO 8601 timestamp when session was created"
+          }
+        },
+        "required": ["id", "activityId", "sessionDate", "duration", "numericValue", "isCompleted", "createdAt"]
+      }
+    }
+  },
+  "required": ["exportDate", "activities", "sessions"],
+  "additionalProperties": false
+}
+

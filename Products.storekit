@@ -1,0 +1,91 @@
+{
+  "identifier" : "B8A7F8E2",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "4.99",
+      "familyShareable" : false,
+      "internalID" : "6670441234",
+      "localizations" : [
+        {
+          "description" : "Unlock unlimited activities and premium features",
+          "displayName" : "Unlimited Activities",
+          "locale" : "en_US"
+        },
+        {
+          "description" : "Schalte unbegrenzte Aktivitäten und Premium-Features frei",
+          "displayName" : "Unbegrenzte Aktivitäten",
+          "locale" : "de"
+        }
+      ],
+      "productID" : "com.intrahabits.unlimited_activities",
+      "referenceName" : "Unlimited Activities",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+    "_applicationInternalID" : "6670441234",
+    "_developerTeamID" : "ABCD123456",
+    "_failTransactionsEnabled" : false,
+    "_lastSynchronizedDate" : 748094400.0,
+    "_locale" : "en_US",
+    "_storefront" : "USA",
+    "_storeKitErrors" : [
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Load Products"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Purchase"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Verification"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Store Sync"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Subscription Status"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "App Transaction"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Manage Subscriptions Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Refund Request Sheet"
+      },
+      {
+        "current" : null,
+        "enabled" : false,
+        "name" : "Offer Code Redeem Sheet"
+      }
+    ]
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}
+

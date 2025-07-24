@@ -1,0 +1,239 @@
+/* Home Screen */
+"home.title" = "Your Activities";
+"home.settings" = "Settings";
+"home.add_activity" = "Add Activity";
+"home.empty.title" = "No Activities Yet";
+"home.empty.subtitle" = "Tap 'Add Activity' to get started";
+
+/* Activity Management */
+"activity.add.title" = "Add Activity";
+"activity.add.name.title" = "Name:";
+"activity.add.name.placeholder" = "Enter activity name";
+"activity.add.type.title" = "Type:";
+"activity.add.color.title" = "Color:";
+"activity.add.create" = "Add Activity";
+"activity.add.save" = "Save";
+
+"activity.edit.title" = "Edit Activity";
+"activity.edit.name.title" = "Name:";
+"activity.edit.name.placeholder" = "Enter activity name";
+"activity.edit.type.title" = "Type:";
+"activity.edit.type.note" = "Type cannot be changed if activity has existing sessions";
+"activity.edit.color.title" = "Color:";
+"activity.edit.save" = "Save Changes";
+
+"activity.type.numeric" = "Numeric";
+"activity.type.timer" = "Timer";
+
+"activity.detail.today_total" = "Today's Total";
+"activity.detail.start_timer" = "Start Timer";
+"activity.detail.statistics" = "Statistics";
+"activity.detail.current_streak" = "Current Streak";
+"activity.detail.longest_streak" = "Longest Streak";
+"activity.detail.this_week" = "This Week";
+"activity.detail.this_month" = "This Month";
+"activity.detail.recent_sessions" = "Recent Sessions";
+"activity.detail.view_all" = "View All";
+"activity.detail.no_sessions.title" = "No Sessions Yet";
+"activity.detail.no_sessions.subtitle" = "Start tracking to see your progress";
+"activity.detail.edit" = "Edit Activity";
+"activity.detail.delete" = "Delete Activity";
+
+"activity.delete.confirmation.title" = "Delete Activity";
+"activity.delete.confirmation.message" = "Are you sure you want to delete this activity? This action cannot be undone.";
+
+/* Timer */
+"timer.todays_total" = "Today's Total";
+"timer.save.title" = "Save Session";
+"timer.save.message" = "Do you want to save this timer session?";
+"timer.save.save" = "Save";
+"timer.state.stopped" = "Stopped";
+"timer.state.running" = "Running";
+"timer.state.paused" = "Paused";
+
+/* Calendar */
+"calendar.title" = "Calendar";
+"calendar.today" = "Today";
+"calendar.no_sessions.title" = "No Sessions";
+"calendar.no_sessions.subtitle" = "No activities recorded for this date";
+
+/* Statistics */
+"statistics.title" = "Statistics";
+"statistics.time_range.week" = "Week";
+"statistics.time_range.month" = "Month";
+"statistics.time_range.year" = "Year";
+"statistics.time_range.all" = "All Time";
+
+"statistics.total_sessions" = "Total Sessions";
+"statistics.total_time" = "Total Time";
+"statistics.active_days" = "Active Days";
+"statistics.avg_per_day" = "Avg per Day";
+
+"statistics.activity_breakdown" = "Activity Breakdown";
+"statistics.progress_over_time" = "Progress Over Time";
+"statistics.daily_activity" = "Daily Activity";
+"statistics.streaks" = "Streaks";
+
+"statistics.streak.current" = "Current";
+"statistics.streak.best" = "Best";
+
+"statistics.no_data.title" = "No Data Available";
+"statistics.no_data.subtitle" = "Start tracking activities to see breakdown";
+"statistics.no_progress.title" = "No Progress Data";
+"statistics.no_progress.subtitle" = "Track activities to see progress over time";
+"statistics.no_streaks.title" = "No Streaks Yet";
+"statistics.no_streaks.subtitle" = "Build consistent habits to see streaks";
+
+/* Settings */
+"settings.title" = "Settings";
+"settings.general" = "General";
+"settings.language" = "Language";
+"settings.data" = "Data";
+"settings.reset_data" = "Reset All Data";
+"settings.export_data" = "Export Data";
+"settings.about" = "About";
+"settings.version" = "Version";
+"settings.reset.confirmation.title" = "Reset All Data";
+"settings.reset.confirmation.message" = "This will permanently delete all your activities and sessions. This action cannot be undone.";
+"settings.reset.confirm" = "Reset";
+
+/* Paywall */
+"paywall.title" = "Upgrade to Premium";
+"paywall.headline" = "Unlock Unlimited Activities";
+"paywall.subheadline" = "Track as many habits as you want with premium features";
+"paywall.one_time_purchase" = "One-time purchase";
+"paywall.purchase_button" = "Upgrade Now";
+"paywall.restore_purchases" = "Restore Purchases";
+"paywall.terms_of_service" = "Terms of Service";
+"paywall.privacy_policy" = "Privacy Policy";
+"paywall.legal_disclaimer" = "Purchase will be charged to your Apple ID account. No subscription required.";
+
+"paywall.feature.unlimited.title" = "Unlimited Activities";
+"paywall.feature.unlimited.description" = "Track as many habits as you want";
+"paywall.feature.sync.title" = "iCloud Sync";
+"paywall.feature.sync.description" = "Sync across all your devices";
+"paywall.feature.export.title" = "Data Export";
+"paywall.feature.export.description" = "Export your data anytime";
+"paywall.feature.support.title" = "Support Development";
+"paywall.feature.support.description" = "Help us build better features";
+
+/* CloudKit Sync */
+"sync.title" = "iCloud Sync";
+"sync.subtitle" = "Sync your data across devices";
+"sync.account_status" = "Account Status";
+"sync.sync_status" = "Sync Status";
+"sync.last_sync" = "Last Sync";
+"sync.manual_sync" = "Sync Now";
+"sync.error" = "Sync Error";
+
+"sync.status.idle" = "Ready";
+"sync.status.syncing" = "Syncing...";
+"sync.status.completed" = "Up to date";
+"sync.status.failed" = "Failed";
+
+"sync.account.available" = "Available";
+"sync.account.no_account" = "Not signed in";
+"sync.account.restricted" = "Restricted";
+"sync.account.unknown" = "Unknown";
+"sync.account.temporarily_unavailable" = "Temporarily unavailable";
+
+"sync.settings.automatic" = "Automatic Sync";
+"sync.settings.automatic.description" = "Sync changes automatically";
+"sync.settings.wifi_only" = "WiFi Only";
+"sync.settings.wifi_only.description" = "Only sync when connected to WiFi";
+
+"cloudkit.error.account_not_available" = "iCloud account not available";
+"cloudkit.error.network_unavailable" = "Network connection unavailable";
+"cloudkit.error.quota_exceeded" = "iCloud storage quota exceeded";
+
+/* StoreKit */
+"storekit.error.verification_failed" = "Purchase verification failed";
+"storekit.error.product_not_found" = "Product not found";
+"storekit.error.purchase_not_allowed" = "Purchase not allowed";
+
+"paywall.purchase.success.title" = "Purchase Successful";
+"paywall.purchase.success.message" = "Thank you for your purchase! You now have unlimited activities.";
+"paywall.purchase.error.title" = "Purchase Error";
+"paywall.limit.title" = "Activity Limit Reached";
+"paywall.limit.subtitle" = "You've reached the free limit of 5 activities. Upgrade to add unlimited activities.";
+"paywall.upgrade_now" = "Upgrade Now";
+"paywall.maybe_later" = "Maybe Later";
+"paywall.one_time_purchase" = "One-time purchase";
+
+/* Accessibility */
+"accessibility.activity.type.timer" = "timer activity";
+"accessibility.activity.type.numeric" = "numeric activity";
+"accessibility.activity.completed" = "completed today";
+"accessibility.activity.not_completed" = "not completed today";
+"accessibility.activity.today" = "today's value";
+"accessibility.activity.hint.timer" = "Double tap to start timer";
+"accessibility.activity.hint.numeric" = "Double tap to add value";
+
+"accessibility.timer.label" = "timer";
+"accessibility.timer.stopped" = "stopped";
+"accessibility.timer.running" = "running";
+"accessibility.timer.paused" = "paused";
+"accessibility.timer.button.start" = "Start timer";
+"accessibility.timer.button.pause" = "Pause timer";
+"accessibility.timer.button.resume" = "Resume timer";
+
+"accessibility.progress.completed" = "completed";
+"accessibility.calendar.one_session" = "1 session";
+"accessibility.calendar.multiple_sessions" = "%d sessions";
+"accessibility.calendar.no_sessions" = "no sessions";
+
+"accessibility.toggle.on" = "enabled";
+"accessibility.toggle.off" = "disabled";
+
+"accessibility.sync.status" = "Sync status";
+"accessibility.sync.last_sync" = "last synced";
+
+/* Widget */
+"widget.activity.select" = "Select Activity";
+"widget.activity.none" = "No Activities";
+"widget.activity.create_first" = "Create activities in the app first";
+"widget.timer.start" = "Start";
+"widget.timer.stop" = "Stop";
+"widget.timer.pause" = "Pause";
+"widget.timer.resume" = "Resume";
+"widget.timer.running" = "Running";
+"widget.timer.paused" = "Paused";
+"widget.timer.stopped" = "Stopped";
+"widget.timer.current_session" = "Current Session";
+"widget.timer.todays_total" = "Today's Total";
+"widget.numeric.today" = "Today";
+"widget.progress.title" = "Today's Progress";
+"widget.progress.sessions" = "Sessions";
+"widget.progress.total_time" = "Total Time";
+"widget.progress.no_progress" = "No Progress Today";
+"widget.progress.start_tracking" = "Start tracking your activities";
+"widget.stats.title" = "Activity Statistics";
+"widget.stats.overview" = "Your progress overview";
+"widget.stats.active_days" = "Active Days";
+"widget.stats.best_streak" = "Best Streak";
+"widget.stats.current_streak" = "Current";
+"widget.stats.no_stats" = "No Statistics Yet";
+"widget.stats.start_activities" = "Start tracking activities to see your progress";
+"widget.configure.tap" = "Tap to Configure";
+"widget.configure.choose_activity" = "Choose an activity to track";
+"widget.configure.select_timer" = "Select Timer Activity";
+"widget.configure.choose_timer" = "Choose which timer to control";
+"widget.configure.no_timers" = "No Timer Activities";
+"widget.configure.create_timers" = "Create timer activities in the app";
+
+/* Common */
+"common.cancel" = "Cancel";
+"common.close" = "Close";
+"common.save" = "Save";
+"common.delete" = "Delete";
+"common.edit" = "Edit";
+"common.done" = "Done";
+"common.ok" = "OK";
+"common.error" = "Error";
+
+/* Time Units */
+"time.minutes" = "min";
+"time.hours" = "h";
+"time.days" = "days";
+"time.day" = "day";
+
