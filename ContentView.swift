@@ -5,6 +5,7 @@ struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var coordinator: NavigationCoordinator
     @StateObject private var viewModel = ActivityListViewModel()
+    @State private var editingActivity: Activity?
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)],
@@ -38,6 +39,13 @@ struct ContentView: View {
         }
         .refreshable {
             viewModel.loadActivities()
+        }
+        .sheet(item: $editingActivity, onDismiss: {
+            // Reload activities after editing
+            viewModel.loadActivities()
+        }) { activity in
+            EditActivityView(activity: activity)
+                .environment(\.managedObjectContext, viewContext)
         }
     }
     
@@ -156,8 +164,8 @@ struct ContentView: View {
         Button(action: { coordinator.presentActivityDetail(for: activity) }) {
             Label("activity.context.view_details", systemImage: "info.circle")
         }
-        
-        Button(action: { /* TODO: Edit activity */ }) {
+
+        Button(action: { editingActivity = activity }) {
             Label("activity.context.edit", systemImage: "pencil")
         }
         
