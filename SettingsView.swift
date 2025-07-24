@@ -7,6 +7,7 @@ struct SettingsView: View {
     @StateObject private var viewModel = SettingsViewModel()
     @State private var showingResetConfirmation = false
     @State private var showingResetFinalConfirmation = false
+    @State private var showingSyncSettings = false
     
     var body: some View {
         NavigationView {
@@ -52,6 +53,9 @@ struct SettingsView: View {
         } message: {
             Text("settings.reset.final.message")
         }
+        .sheet(isPresented: $showingSyncSettings) {
+            SyncSettingsView()
+        }
     }
     
     // MARK: - Header View
@@ -95,7 +99,11 @@ struct SettingsView: View {
                     icon: "globe",
                     title: "settings.language.title",
                     subtitle: "settings.language.subtitle",
-                    action: { /* TODO: Language selection */ }
+                    action: {
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
+                    }
                 )
                 
                 Divider()
@@ -105,7 +113,17 @@ struct SettingsView: View {
                     icon: "bell",
                     title: "settings.notifications.title",
                     subtitle: "settings.notifications.subtitle",
-                    action: { /* TODO: Notification settings */ }
+                    action: {
+                        if #available(iOS 16.0, *) {
+                            if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
+                        } else {
+                            if let url = URL(string: UIApplication.openSettingsURLString) {
+                                UIApplication.shared.open(url)
+                            }
+                        }
+                    }
                 )
             }
             .cardStyle()
@@ -134,7 +152,7 @@ struct SettingsView: View {
                     icon: "icloud",
                     title: "settings.sync.title",
                     subtitle: "settings.sync.subtitle",
-                    action: { /* TODO: Sync settings */ }
+                    action: { showingSyncSettings = true }
                 )
                 
                 Divider()
@@ -175,7 +193,11 @@ struct SettingsView: View {
                     icon: "doc.text",
                     title: "settings.privacy.title",
                     subtitle: "settings.privacy.subtitle",
-                    action: { /* TODO: Privacy policy */ }
+                    action: {
+                        if let url = URL(string: "https://example.com/privacy") {
+                            UIApplication.shared.open(url)
+                        }
+                    }
                 )
             }
             .cardStyle()
