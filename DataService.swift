@@ -37,16 +37,18 @@ class CoreDataService: DataServiceProtocol {
                 promise(.failure(DataServiceError.contextNotAvailable))
                 return
             }
-            
-            let request: NSFetchRequest<Activity> = Activity.fetchRequest()
-            request.sortDescriptors = [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)]
-            request.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
-            
-            do {
-                let activities = try self.context.fetch(request)
-                promise(.success(activities))
-            } catch {
-                promise(.failure(error))
+
+            self.context.perform {
+                let request: NSFetchRequest<Activity> = Activity.fetchRequest()
+                request.sortDescriptors = [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)]
+                request.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
+
+                do {
+                    let activities = try self.context.fetch(request)
+                    promise(.success(activities))
+                } catch {
+                    promise(.failure(error))
+                }
             }
         }
         .eraseToAnyPublisher()
@@ -58,36 +60,38 @@ class CoreDataService: DataServiceProtocol {
                 promise(.failure(DataServiceError.contextNotAvailable))
                 return
             }
-            
-            // Check activity limit
-            let countRequest: NSFetchRequest<Activity> = Activity.fetchRequest()
-            countRequest.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
-            
-            do {
-                let existingCount = try self.context.count(for: countRequest)
-                
-                // TODO: Check premium subscription status
-                let hasUnlimitedActivities = false
-                if existingCount >= 5 && !hasUnlimitedActivities {
-                    promise(.failure(DataServiceError.activityLimitReached))
-                    return
+
+            self.context.perform {
+                // Check activity limit
+                let countRequest: NSFetchRequest<Activity> = Activity.fetchRequest()
+                countRequest.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
+
+                do {
+                    let existingCount = try self.context.count(for: countRequest)
+
+                    // TODO: Check premium subscription status
+                    let hasUnlimitedActivities = false
+                    if existingCount >= 5 && !hasUnlimitedActivities {
+                        promise(.failure(DataServiceError.activityLimitReached))
+                        return
+                    }
+
+                    let activity = Activity(context: self.context)
+                    activity.id = UUID()
+                    activity.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    activity.type = type.rawValue
+                    activity.color = color
+                    activity.createdAt = Date()
+                    activity.updatedAt = Date()
+                    activity.isActive = true
+                    activity.sortOrder = Int32(existingCount)
+
+                    try self.context.save()
+                    promise(.success(activity))
+
+                } catch {
+                    promise(.failure(error))
                 }
-                
-                let activity = Activity(context: self.context)
-                activity.id = UUID()
-                activity.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                activity.type = type.rawValue
-                activity.color = color
-                activity.createdAt = Date()
-                activity.updatedAt = Date()
-                activity.isActive = true
-                activity.sortOrder = Int32(existingCount)
-                
-                try self.context.save()
-                promise(.success(activity))
-                
-            } catch {
-                promise(.failure(error))
             }
         }
         .eraseToAnyPublisher()
@@ -99,14 +103,16 @@ class CoreDataService: DataServiceProtocol {
                 promise(.failure(DataServiceError.contextNotAvailable))
                 return
             }
-            
-            activity.updatedAt = Date()
-            
-            do {
-                try self.context.save()
-                promise(.success(activity))
-            } catch {
-                promise(.failure(error))
+
+            self.context.perform {
+                activity.updatedAt = Date()
+
+                do {
+                    try self.context.save()
+                    promise(.success(activity))
+                } catch {
+                    promise(.failure(error))
+                }
             }
         }
         .eraseToAnyPublisher()
@@ -118,16 +124,18 @@ class CoreDataService: DataServiceProtocol {
                 promise(.failure(DataServiceError.contextNotAvailable))
                 return
             }
-            
-            // Soft delete
-            activity.isActive = false
-            activity.updatedAt = Date()
-            
-            do {
-                try self.context.save()
-                promise(.success(()))
-            } catch {
-                promise(.failure(error))
+
+            self.context.perform {
+                // Soft delete
+                activity.isActive = false
+                activity.updatedAt = Date()
+
+                do {
+                    try self.context.save()
+                    promise(.success(()))
+                } catch {
+                    promise(.failure(error))
+                }
             }
         }
         .eraseToAnyPublisher()
@@ -139,17 +147,19 @@ class CoreDataService: DataServiceProtocol {
                 promise(.failure(DataServiceError.contextNotAvailable))
                 return
             }
-            
-            for (index, activity) in activities.enumerated() {
-                activity.sortOrder = Int32(index)
-                activity.updatedAt = Date()
-            }
-            
-            do {
-                try self.context.save()
-                promise(.success(()))
-            } catch {
-                promise(.failure(error))
+
+            self.context.perform {
+                for (index, activity) in activities.enumerated() {
+                    activity.sortOrder = Int32(index)
+                    activity.updatedAt = Date()
+                }
+
+                do {
+                    try self.context.save()
+                    promise(.success(()))
+                } catch {
+                    promise(.failure(error))
+                }
             }
         }
         .eraseToAnyPublisher()
@@ -162,27 +172,29 @@ class CoreDataService: DataServiceProtocol {
                 promise(.failure(DataServiceError.contextNotAvailable))
                 return
             }
-            
-            let request: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
-            request.sortDescriptors = [NSSortDescriptor(keyPath: \ActivitySession.sessionDate, ascending: false)]
-            
-            var predicates = [NSPredicate(format: "activity == %@", activity)]
-            
-            if let date = date {
-                let calendar = Calendar.current
-                let startOfDay = calendar.startOfDay(for: date)
-                let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
-                predicates.append(NSPredicate(format: "sessionDate >= %@ AND sessionDate < %@", 
-                                            startOfDay as NSDate, endOfDay as NSDate))
-            }
-            
-            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
-            
-            do {
-                let sessions = try self.context.fetch(request)
-                promise(.success(sessions))
-            } catch {
-                promise(.failure(error))
+
+            self.context.perform {
+                let request: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
+                request.sortDescriptors = [NSSortDescriptor(keyPath: \ActivitySession.sessionDate, ascending: false)]
+
+                var predicates = [NSPredicate(format: "activity == %@", activity)]
+
+                if let date = date {
+                    let calendar = Calendar.current
+                    let startOfDay = calendar.startOfDay(for: date)
+                    let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+                    predicates.append(NSPredicate(format: "sessionDate >= %@ AND sessionDate < %@",
+                                                startOfDay as NSDate, endOfDay as NSDate))
+                }
+
+                request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: predicates)
+
+                do {
+                    let sessions = try self.context.fetch(request)
+                    promise(.success(sessions))
+                } catch {
+                    promise(.failure(error))
+                }
             }
         }
         .eraseToAnyPublisher()
@@ -194,28 +206,30 @@ class CoreDataService: DataServiceProtocol {
                 promise(.failure(DataServiceError.contextNotAvailable))
                 return
             }
-            
-            let session = ActivitySession(context: self.context)
-            session.id = UUID()
-            session.activity = activity
-            session.sessionDate = Date()
-            session.createdAt = Date()
-            session.updatedAt = Date()
-            session.isCompleted = true
-            
-            if let duration = duration {
-                session.duration = duration
-            }
-            
-            if let numericValue = numericValue {
-                session.numericValue = numericValue
-            }
-            
-            do {
-                try self.context.save()
-                promise(.success(session))
-            } catch {
-                promise(.failure(error))
+
+            self.context.perform {
+                let session = ActivitySession(context: self.context)
+                session.id = UUID()
+                session.activity = activity
+                session.sessionDate = Date()
+                session.createdAt = Date()
+                session.updatedAt = Date()
+                session.isCompleted = true
+
+                if let duration = duration {
+                    session.duration = duration
+                }
+
+                if let numericValue = numericValue {
+                    session.numericValue = numericValue
+                }
+
+                do {
+                    try self.context.save()
+                    promise(.success(session))
+                } catch {
+                    promise(.failure(error))
+                }
             }
         }
         .eraseToAnyPublisher()
@@ -227,14 +241,16 @@ class CoreDataService: DataServiceProtocol {
                 promise(.failure(DataServiceError.contextNotAvailable))
                 return
             }
-            
-            session.updatedAt = Date()
-            
-            do {
-                try self.context.save()
-                promise(.success(session))
-            } catch {
-                promise(.failure(error))
+
+            self.context.perform {
+                session.updatedAt = Date()
+
+                do {
+                    try self.context.save()
+                    promise(.success(session))
+                } catch {
+                    promise(.failure(error))
+                }
             }
         }
         .eraseToAnyPublisher()
@@ -246,14 +262,16 @@ class CoreDataService: DataServiceProtocol {
                 promise(.failure(DataServiceError.contextNotAvailable))
                 return
             }
-            
-            self.context.delete(session)
-            
-            do {
-                try self.context.save()
-                promise(.success(()))
-            } catch {
-                promise(.failure(error))
+
+            self.context.perform {
+                self.context.delete(session)
+
+                do {
+                    try self.context.save()
+                    promise(.success(()))
+                } catch {
+                    promise(.failure(error))
+                }
             }
         }
         .eraseToAnyPublisher()
@@ -266,28 +284,30 @@ class CoreDataService: DataServiceProtocol {
                 promise(.failure(DataServiceError.contextNotAvailable))
                 return
             }
-            
-            let activityRequest: NSFetchRequest<Activity> = Activity.fetchRequest()
-            let sessionRequest: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
-            
-            do {
-                let activities = try self.context.fetch(activityRequest)
-                let sessions = try self.context.fetch(sessionRequest)
-                
-                let exportData = ExportData(
-                    activities: activities.map { ActivityExport(from: $0) },
-                    sessions: sessions.map { SessionExport(from: $0) },
-                    exportDate: Date()
-                )
-                
-                let encoder = JSONEncoder()
-                encoder.dateEncodingStrategy = .iso8601
-                let jsonData = try encoder.encode(exportData)
-                
-                promise(.success(jsonData))
-                
-            } catch {
-                promise(.failure(error))
+
+            self.context.perform {
+                let activityRequest: NSFetchRequest<Activity> = Activity.fetchRequest()
+                let sessionRequest: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
+
+                do {
+                    let activities = try self.context.fetch(activityRequest)
+                    let sessions = try self.context.fetch(sessionRequest)
+
+                    let exportData = ExportData(
+                        activities: activities.map { ActivityExport(from: $0) },
+                        sessions: sessions.map { SessionExport(from: $0) },
+                        exportDate: Date()
+                    )
+
+                    let encoder = JSONEncoder()
+                    encoder.dateEncodingStrategy = .iso8601
+                    let jsonData = try encoder.encode(exportData)
+
+                    promise(.success(jsonData))
+
+                } catch {
+                    promise(.failure(error))
+                }
             }
         }
         .eraseToAnyPublisher()
@@ -299,22 +319,24 @@ class CoreDataService: DataServiceProtocol {
                 promise(.failure(DataServiceError.contextNotAvailable))
                 return
             }
-            
-            let activityRequest: NSFetchRequest<NSFetchRequestResult> = Activity.fetchRequest()
-            let sessionRequest: NSFetchRequest<NSFetchRequestResult> = ActivitySession.fetchRequest()
-            
-            let activityDeleteRequest = NSBatchDeleteRequest(fetchRequest: activityRequest)
-            let sessionDeleteRequest = NSBatchDeleteRequest(fetchRequest: sessionRequest)
-            
-            do {
-                try self.context.execute(sessionDeleteRequest)
-                try self.context.execute(activityDeleteRequest)
-                try self.context.save()
-                
-                promise(.success(()))
-                
-            } catch {
-                promise(.failure(error))
+
+            self.context.perform {
+                let activityRequest: NSFetchRequest<NSFetchRequestResult> = Activity.fetchRequest()
+                let sessionRequest: NSFetchRequest<NSFetchRequestResult> = ActivitySession.fetchRequest()
+
+                let activityDeleteRequest = NSBatchDeleteRequest(fetchRequest: activityRequest)
+                let sessionDeleteRequest = NSBatchDeleteRequest(fetchRequest: sessionRequest)
+
+                do {
+                    try self.context.execute(sessionDeleteRequest)
+                    try self.context.execute(activityDeleteRequest)
+                    try self.context.save()
+
+                    promise(.success(()))
+
+                } catch {
+                    promise(.failure(error))
+                }
             }
         }
         .eraseToAnyPublisher()
