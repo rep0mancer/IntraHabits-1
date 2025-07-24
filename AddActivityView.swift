@@ -250,9 +250,9 @@ class AddActivityViewModel: ObservableObject {
         
         do {
             let existingActivities = try context.fetch(request)
-            
-            // TODO: Check if user has premium subscription
-            let hasUnlimitedActivities = false // This will be replaced with actual subscription check
+
+            // Check if user has unlocked unlimited activities
+            let hasUnlimitedActivities = StoreKitService.shared.hasUnlimitedActivities
             
             if existingActivities.count >= 5 && !hasUnlimitedActivities {
                 shouldShowPaywall = true
