@@ -37,14 +37,12 @@ This package contains the complete IntraHabits 1.0 production-ready iOS applicat
 **ViewModels (1 file)**
 - `ActivityListViewModel.swift` - MVVM view model for activity management
 
-**Models & Data (4 files)**
+**Models & Data (3 files)**
 - `DataModel.xcdatamodeld/contents` - CoreData model with CloudKit integration
 - `Activity+Extensions.swift` - Activity model extensions and computed properties
 - `ActivitySession+Extensions.swift` - Session model extensions
-- `Repository.swift` - Repository pattern for data access abstraction
 
-**Services (3 files)**
-- `DataService.swift` - Core data operations and business logic
+**Services (2 files)**
 - `CloudKitService.swift` - iCloud sync with conflict resolution
 - `StoreKitService.swift` - In-app purchase management
 
@@ -55,8 +53,7 @@ This package contains the complete IntraHabits 1.0 production-ready iOS applicat
 - `PersistenceController.swift` - CoreData stack management
 - `Extensions.swift` - Swift extensions and utilities
 
-### 2. Test Files (2 Swift Files)
-- `DataServiceTests.swift` - Comprehensive unit tests for data operations
+### 2. Test Files (1 Swift File)
 - `StoreKitServiceTests.swift` - Unit tests for purchase logic and limits
 
 ### 3. Documentation (4 Markdown Files)

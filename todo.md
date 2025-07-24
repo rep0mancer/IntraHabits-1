@@ -73,7 +73,6 @@
 - [ ] Handle subscription states
 
 ## Phase 9: Testing, localization, and accessibility
-- [x] Create comprehensive unit tests for DataService
 - [x] Create comprehensive unit tests for StoreKitService
 - [x] Build accessibility helper with VoiceOver support
 - [x] Add accessibility strings to localization files

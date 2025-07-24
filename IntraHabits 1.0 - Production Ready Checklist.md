@@ -64,7 +64,7 @@
 
 #### ✅ **Testing & Quality**
 - [x] ≥85% unit test coverage (exceeds 80% requirement)
-- [x] Comprehensive test suite (DataService, StoreKit, ViewModels)
+- [x] Comprehensive test suite (StoreKit, ViewModels)
 - [x] Snapshot UI tests
 - [x] Accessibility testing
 - [x] Performance benchmarks
