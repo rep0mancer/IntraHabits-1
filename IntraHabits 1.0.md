@@ -45,7 +45,6 @@ IntraHabits/
 │   ├── ViewModels/           # MVVM ViewModels
 │   ├── Models/               # CoreData models
 │   ├── Services/             # Business logic services
-│   │   ├── DataService.swift
 │   │   ├── CloudKitService.swift
 │   │   └── StoreKitService.swift
 │   ├── Utils/                # Utilities and helpers
@@ -126,16 +125,12 @@ The project includes comprehensive unit tests with ≥80% code coverage:
 # Run all tests
 xcodebuild test -project IntraHabits.xcodeproj -scheme IntraHabits
 
-# Run specific test class
-xcodebuild test -project IntraHabits.xcodeproj -scheme IntraHabits -only-testing:IntraHabitsTests/DataServiceTests
-
 # Generate coverage report
 xcodebuild test -project IntraHabits.xcodeproj -scheme IntraHabits -enableCodeCoverage YES
 ```
 
 ### Test Categories
 
-- **DataService Tests**: Core data operations and validation
 - **StoreKitService Tests**: In-app purchase logic and limits
 - **CloudKitService Tests**: Sync functionality and conflict resolution
 - **Accessibility Tests**: VoiceOver and accessibility compliance

@@ -12,22 +12,7 @@ This document outlines the comprehensive testing strategy for IntraHabits 1.0, c
 
 ## 1. Unit Tests
 
-### 1.1 DataService Tests
-**File**: `DataServiceTests.swift`
-**Coverage**: Core data operations, validation, statistics
-
-**Test Cases**:
-- ✅ Activity creation with valid data
-- ✅ Activity creation with invalid data (validation)
-- ✅ Activity fetching and filtering
-- ✅ Activity updating and deletion
-- ✅ Session creation (numeric and timer types)
-- ✅ Session fetching and deletion
-- ✅ Statistics calculations (today, weekly, monthly totals)
-- ✅ Streak calculations (current and best streaks)
-- ✅ Performance tests for bulk operations
-
-### 1.2 StoreKitService Tests
+### 1.1 StoreKitService Tests
 **File**: `StoreKitServiceTests.swift`
 **Coverage**: In-app purchase logic, activity limits
 
@@ -39,7 +24,7 @@ This document outlines the comprehensive testing strategy for IntraHabits 1.0, c
 - ✅ Purchase workflow simulation
 - ✅ Error message localization
 
-### 1.3 CloudKitService Tests
+### 1.2 CloudKitService Tests
 **File**: `CloudKitServiceTests.swift`
 **Coverage**: Sync logic, conflict resolution
 
