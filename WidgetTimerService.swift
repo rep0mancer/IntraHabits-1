@@ -18,7 +18,7 @@ class WidgetTimerService: ObservableObject {
         } else {
             self.userDefaults = UserDefaults.standard
             self.isEnabled = false
-            print("WidgetTimerService: Unable to create shared UserDefaults. Timer widgets are disabled.")
+            AppLogger.error("WidgetTimerService: Unable to create shared UserDefaults. Timer widgets are disabled.")
         }
     }
     
