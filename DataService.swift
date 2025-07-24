@@ -342,40 +342,4 @@ enum DataServiceError: LocalizedError {
     }
 }
 
-// MARK: - CloudKit Service
-class CloudKitService {
-    private let container: CKContainer
-    private let database: CKDatabase
-    
-    init() {
-        self.container = CKContainer.default()
-        self.database = container.privateCloudDatabase
-    }
-    
-    func checkAccountStatus() -> AnyPublisher<CKAccountStatus, Error> {
-        Future { [weak self] promise in
-            self?.container.accountStatus { status, error in
-                if let error = error {
-                    promise(.failure(error))
-                } else {
-                    promise(.success(status))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
-    }
-    
-    func requestPermissions() -> AnyPublisher<CKContainer.ApplicationPermissionStatus, Error> {
-        Future { [weak self] promise in
-            self?.container.requestApplicationPermission(.userDiscoverability) { status, error in
-                if let error = error {
-                    promise(.failure(error))
-                } else {
-                    promise(.success(status))
-                }
-            }
-        }
-        .eraseToAnyPublisher()
-    }
-}
 
