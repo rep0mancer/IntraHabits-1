@@ -199,13 +199,17 @@ struct PaywallView: View {
         VStack(spacing: DesignSystem.Spacing.sm) {
             HStack(spacing: DesignSystem.Spacing.lg) {
                 Button("paywall.terms_of_service") {
-                    // TODO: Open terms of service
+                    if let url = URL(string: "https://example.com/terms") {
+                        UIApplication.shared.open(url)
+                    }
                 }
                 .font(DesignSystem.Typography.caption1)
                 .foregroundColor(DesignSystem.Colors.primary)
-                
+
                 Button("paywall.privacy_policy") {
-                    // TODO: Open privacy policy
+                    if let url = URL(string: "https://example.com/privacy") {
+                        UIApplication.shared.open(url)
+                    }
                 }
                 .font(DesignSystem.Typography.caption1)
                 .foregroundColor(DesignSystem.Colors.primary)
