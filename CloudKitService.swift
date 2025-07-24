@@ -265,11 +265,15 @@ class CloudKitService: ObservableObject {
         
         await context.perform {
             do {
-                let activityID = UUID(uuidString: record["id"] as? String ?? "")
-                
+                guard let idString = record["id"] as? String,
+                      let activityID = UUID(uuidString: idString) else {
+                    AppLogger.error("Invalid activity record ID: \(record.recordID.recordName)")
+                    return
+                }
+
                 // Check if activity already exists
                 let request: NSFetchRequest<Activity> = Activity.fetchRequest()
-                request.predicate = NSPredicate(format: "id == %@", activityID! as CVarArg)
+                request.predicate = NSPredicate(format: "id == %@", activityID as CVarArg)
                 
                 let existingActivities = try context.fetch(request)
                 let activity = existingActivities.first ?? Activity(context: context)
@@ -298,11 +302,15 @@ class CloudKitService: ObservableObject {
         
         await context.perform {
             do {
-                let sessionID = UUID(uuidString: record["id"] as? String ?? "")
-                
+                guard let idString = record["id"] as? String,
+                      let sessionID = UUID(uuidString: idString) else {
+                    AppLogger.error("Invalid session record ID: \(record.recordID.recordName)")
+                    return
+                }
+
                 // Check if session already exists
                 let request: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
-                request.predicate = NSPredicate(format: "id == %@", sessionID! as CVarArg)
+                request.predicate = NSPredicate(format: "id == %@", sessionID as CVarArg)
                 
                 let existingSessions = try context.fetch(request)
                 let session = existingSessions.first ?? ActivitySession(context: context)
