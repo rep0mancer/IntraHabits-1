@@ -34,6 +34,7 @@
 "activity.detail.this_month" = "This Month";
 "activity.detail.recent_sessions" = "Recent Sessions";
 "activity.detail.view_all" = "View All";
+"activity.sessions.title" = "All Sessions";
 "activity.detail.no_sessions.title" = "No Sessions Yet";
 "activity.detail.no_sessions.subtitle" = "Start tracking to see your progress";
 "activity.detail.edit" = "Edit Activity";
