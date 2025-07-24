@@ -343,13 +343,190 @@ class CoreDataService: DataServiceProtocol {
     }
 }
 
+// MARK: - Async/Await Data Service
+class DataService {
+    private let persistenceController: PersistenceController
+    private var context: NSManagedObjectContext { persistenceController.container.viewContext }
+
+    init(persistenceController: PersistenceController = .shared) {
+        self.persistenceController = persistenceController
+    }
+
+    // MARK: - Activity Operations
+    func createActivity(name: String, type: String, color: String) async throws -> Activity {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw DataServiceError.validationError("Activity name cannot be empty")
+        }
+        guard let activityType = ActivityType(rawValue: type) else {
+            throw DataServiceError.validationError("Invalid activity type")
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            context.perform {
+                do {
+                    let countRequest: NSFetchRequest<Activity> = Activity.fetchRequest()
+                    countRequest.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
+                    let existingCount = try self.context.count(for: countRequest)
+
+                    let activity = Activity(context: self.context)
+                    activity.id = UUID()
+                    activity.name = trimmed
+                    activity.type = activityType.rawValue
+                    activity.color = color
+                    activity.createdAt = Date()
+                    activity.updatedAt = Date()
+                    activity.isActive = true
+                    activity.sortOrder = Int32(existingCount)
+
+                    try self.context.save()
+                    continuation.resume(returning: activity)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    func fetchActivities() async throws -> [Activity] {
+        return try await withCheckedThrowingContinuation { continuation in
+            context.perform {
+                do {
+                    let request = Activity.activitiesFetchRequest()
+                    let activities = try self.context.fetch(request)
+                    continuation.resume(returning: activities)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    func updateActivity(_ activity: Activity, name: String, type: String, color: String) async throws -> Activity {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else {
+            throw DataServiceError.validationError("Activity name cannot be empty")
+        }
+        guard let activityType = ActivityType(rawValue: type) else {
+            throw DataServiceError.validationError("Invalid activity type")
+        }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            context.perform {
+                do {
+                    activity.name = trimmed
+                    activity.type = activityType.rawValue
+                    activity.color = color
+                    activity.updatedAt = Date()
+                    try self.context.save()
+                    continuation.resume(returning: activity)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    func deleteActivity(_ activity: Activity) async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            context.perform {
+                do {
+                    activity.isActive = false
+                    activity.updatedAt = Date()
+                    try self.context.save()
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    // MARK: - Session Operations
+    func createSession(for activity: Activity, sessionDate: Date, numericValue: Double?, duration: TimeInterval?) async throws -> ActivitySession {
+        return try await withCheckedThrowingContinuation { continuation in
+            context.perform {
+                do {
+                    let session = ActivitySession(context: self.context)
+                    session.id = UUID()
+                    session.activity = activity
+                    session.sessionDate = sessionDate
+                    session.numericValue = numericValue ?? 0
+                    session.duration = duration ?? 0
+                    session.isCompleted = true
+                    session.createdAt = Date()
+                    session.updatedAt = Date()
+                    try self.context.save()
+                    continuation.resume(returning: session)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    func fetchSessions(for activity: Activity) async throws -> [ActivitySession] {
+        return try await withCheckedThrowingContinuation { continuation in
+            context.perform {
+                do {
+                    let request = ActivitySession.sessionsForActivityFetchRequest(activity)
+                    let sessions = try self.context.fetch(request)
+                    continuation.resume(returning: sessions)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    func deleteSession(_ session: ActivitySession) async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            context.perform {
+                do {
+                    self.context.delete(session)
+                    try self.context.save()
+                    continuation.resume()
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+
+    // MARK: - Statistics
+    func getTodayTotal(for activity: Activity) async throws -> Double {
+        return try await withCheckedThrowingContinuation { continuation in
+            context.perform {
+                continuation.resume(returning: activity.todaysTotal())
+            }
+        }
+    }
+
+    func getWeeklyTotal(for activity: Activity) async throws -> Double {
+        return try await withCheckedThrowingContinuation { continuation in
+            context.perform {
+                continuation.resume(returning: activity.weeklyTotal())
+            }
+        }
+    }
+
+    func getCurrentStreak(for activity: Activity) async throws -> Int {
+        return try await withCheckedThrowingContinuation { continuation in
+            context.perform {
+                continuation.resume(returning: activity.currentStreak())
+            }
+        }
+    }
+}
+
 // MARK: - Data Service Errors
 enum DataServiceError: LocalizedError {
     case contextNotAvailable
     case activityLimitReached
     case invalidData
     case syncFailed
-    
+    case validationError(String)
+
     var errorDescription: String? {
         switch self {
         case .contextNotAvailable:
@@ -360,6 +537,8 @@ enum DataServiceError: LocalizedError {
             return "The provided data is invalid"
         case .syncFailed:
             return "Failed to sync with iCloud"
+        case .validationError(let message):
+            return message
         }
     }
 }
