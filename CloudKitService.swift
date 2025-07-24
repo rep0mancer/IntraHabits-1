@@ -61,7 +61,7 @@ class CloudKitService: ObservableObject {
         do {
             return try await container.accountStatus()
         } catch {
-            print("Error checking CloudKit account status: \(error)")
+            AppLogger.error("Error checking CloudKit account status: \(error)")
             return .couldNotDetermine
         }
     }
@@ -99,7 +99,7 @@ class CloudKitService: ObservableObject {
         } catch {
             syncError = error
             syncStatus = .failed
-            print("Sync failed: \(error)")
+            AppLogger.error("Sync failed: \(error)")
         }
     }
     
@@ -196,7 +196,7 @@ class CloudKitService: ObservableObject {
             case .success(let record):
                 try await processActivityRecord(record)
             case .failure(let error):
-                print("Error downloading activity record: \(error)")
+                AppLogger.error("Error downloading activity record: \(error)")
             }
         }
     }
@@ -212,7 +212,7 @@ class CloudKitService: ObservableObject {
             case .success(let record):
                 try await processSessionRecord(record)
             case .failure(let error):
-                print("Error downloading session record: \(error)")
+                AppLogger.error("Error downloading session record: \(error)")
             }
         }
     }
@@ -288,7 +288,7 @@ class CloudKitService: ObservableObject {
                 try context.save()
                 
             } catch {
-                print("Error processing activity record: \(error)")
+                AppLogger.error("Error processing activity record: \(error)")
             }
         }
     }
@@ -333,7 +333,7 @@ class CloudKitService: ObservableObject {
                 try context.save()
                 
             } catch {
-                print("Error processing session record: \(error)")
+                AppLogger.error("Error processing session record: \(error)")
             }
         }
     }

@@ -386,7 +386,7 @@ class CalendarViewModel: ObservableObject {
         do {
             monthSessions = try context.fetch(request)
         } catch {
-            print("Error loading month sessions: \(error)")
+            AppLogger.error("Error loading month sessions: \(error)")
             monthSessions = []
         }
     }
@@ -406,7 +406,7 @@ class CalendarViewModel: ObservableObject {
         do {
             selectedDateSessions = try context.fetch(request)
         } catch {
-            print("Error loading date sessions: \(error)")
+            AppLogger.error("Error loading date sessions: \(error)")
             selectedDateSessions = []
         }
     }

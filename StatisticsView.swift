@@ -501,7 +501,7 @@ class StatisticsViewModel: ObservableObject {
             calculateStreakData()
             
         } catch {
-            print("Error loading statistics: \(error)")
+            AppLogger.error("Error loading statistics: \(error)")
         }
     }
     
@@ -628,7 +628,7 @@ class StatisticsViewModel: ObservableObject {
             }.sorted { $0.currentStreak > $1.currentStreak }
             
         } catch {
-            print("Error calculating streak data: \(error)")
+            AppLogger.error("Error calculating streak data: \(error)")
         }
     }
     

@@ -246,7 +246,7 @@ class EditActivityViewModel: ObservableObject {
             let sessions = try context.fetch(request)
             hasExistingSessions = !sessions.isEmpty
         } catch {
-            print("Error checking for existing sessions: \(error)")
+            AppLogger.error("Error checking for existing sessions: \(error)")
             hasExistingSessions = false
         }
     }

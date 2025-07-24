@@ -23,7 +23,7 @@ class WidgetDataService: ObservableObject {
         
         container.loadPersistentStores { _, error in
             if let error = error {
-                print("Widget Core Data error: \(error)")
+                AppLogger.error("Widget Core Data error: \(error)")
             }
         }
         

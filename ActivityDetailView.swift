@@ -61,6 +61,13 @@ struct ActivityDetailView: View {
         } message: {
             Text("activity.delete.confirmation.message")
         }
+        .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+            Button("OK") { viewModel.errorMessage = nil }
+        } message: {
+            if let errorMessage = viewModel.errorMessage {
+                Text(errorMessage)
+            }
+        }
     }
     
     // MARK: - Header Section
@@ -266,7 +273,8 @@ struct ActivityDetailView: View {
             try viewContext.save()
             dismiss()
         } catch {
-            print("Error deleting activity: \(error)")
+            AppLogger.error("Error deleting activity: \(error)")
+            viewModel.errorMessage = error.localizedDescription
         }
     }
 }
@@ -309,6 +317,7 @@ class ActivityDetailViewModel: ObservableObject {
     @Published var currentStreak: Int = 0
     @Published var longestStreak: Int = 0
     @Published var recentSessions: [ActivitySession] = []
+    @Published var errorMessage: String?
     
     private var activity: Activity?
     private var viewContext: NSManagedObjectContext?
@@ -352,9 +361,10 @@ class ActivityDetailViewModel: ObservableObject {
             // Haptic feedback
             let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
             impactFeedback.impactOccurred()
-            
+
         } catch {
-            print("Error saving session: \(error)")
+            AppLogger.error("Error saving session: \(error)")
+            errorMessage = error.localizedDescription
         }
     }
     
@@ -387,7 +397,8 @@ class ActivityDetailViewModel: ObservableObject {
         do {
             recentSessions = try context.fetch(request)
         } catch {
-            print("Error loading recent sessions: \(error)")
+            AppLogger.error("Error loading recent sessions: \(error)")
+            errorMessage = error.localizedDescription
             recentSessions = []
         }
     }
