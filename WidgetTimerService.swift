@@ -11,10 +11,13 @@ class WidgetTimerService: ObservableObject {
     private var timerStates: [String: WidgetTimerState] = [:]
     
     private init() {
-        guard let sharedDefaults = UserDefaults(suiteName: appGroupIdentifier) else {
-            fatalError("Unable to create shared UserDefaults")
+        if let sharedDefaults = UserDefaults(suiteName: appGroupIdentifier) {
+            self.userDefaults = sharedDefaults
+        } else {
+            // Fallback to standard defaults to avoid crashing
+            self.userDefaults = UserDefaults.standard
+            print("WidgetTimerService: Using standard UserDefaults as shared defaults were unavailable")
         }
-        self.userDefaults = sharedDefaults
         loadTimerStates()
     }
     

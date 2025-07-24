@@ -3,13 +3,13 @@ import CoreData
 @testable import IntraHabits
 
 final class DataServiceTests: XCTestCase {
-    var dataService: DataService!
+    var dataService: CoreDataService!
     var mockPersistenceController: PersistenceController!
     
     override func setUpWithError() throws {
         // Create in-memory Core Data stack for testing
         mockPersistenceController = PersistenceController(inMemory: true)
-        dataService = DataService(persistenceController: mockPersistenceController)
+        dataService = CoreDataService(container: mockPersistenceController.container)
     }
     
     override func tearDownWithError() throws {
@@ -22,7 +22,7 @@ final class DataServiceTests: XCTestCase {
     func testCreateActivity() async throws {
         // Given
         let activityName = "Test Activity"
-        let activityType = "numeric"
+        let activityType = ActivityType.numeric
         let activityColor = "#CD3A2E"
         
         // When
@@ -35,7 +35,7 @@ final class DataServiceTests: XCTestCase {
         // Then
         XCTAssertNotNil(activity)
         XCTAssertEqual(activity.name, activityName)
-        XCTAssertEqual(activity.type, activityType)
+        XCTAssertEqual(activity.type, activityType.rawValue)
         XCTAssertEqual(activity.color, activityColor)
         XCTAssertTrue(activity.isActive)
         XCTAssertNotNil(activity.id)
@@ -50,7 +50,7 @@ final class DataServiceTests: XCTestCase {
         do {
             _ = try await dataService.createActivity(
                 name: emptyName,
-                type: "numeric",
+                type: .numeric,
                 color: "#CD3A2E"
             )
             XCTFail("Should have thrown validation error")
@@ -65,12 +65,12 @@ final class DataServiceTests: XCTestCase {
         // Given
         let activity1 = try await dataService.createActivity(
             name: "Activity 1",
-            type: "numeric",
+            type: .numeric,
             color: "#CD3A2E"
         )
         let activity2 = try await dataService.createActivity(
             name: "Activity 2",
-            type: "timer",
+            type: .timer,
             color: "#008C8C"
         )
         
@@ -85,23 +85,21 @@ final class DataServiceTests: XCTestCase {
     
     func testUpdateActivity() async throws {
         // Given
-        let activity = try await dataService.createActivity(
+        var activity = try await dataService.createActivity(
             name: "Original Name",
-            type: "numeric",
+            type: .numeric,
             color: "#CD3A2E"
         )
-        
+
         // When
-        let updatedActivity = try await dataService.updateActivity(
-            activity,
-            name: "Updated Name",
-            type: "timer",
-            color: "#008C8C"
-        )
+        activity.name = "Updated Name"
+        activity.type = ActivityType.timer.rawValue
+        activity.color = "#008C8C"
+        let updatedActivity = try await dataService.updateActivity(activity)
         
         // Then
         XCTAssertEqual(updatedActivity.name, "Updated Name")
-        XCTAssertEqual(updatedActivity.type, "timer")
+        XCTAssertEqual(updatedActivity.type, ActivityType.timer.rawValue)
         XCTAssertEqual(updatedActivity.color, "#008C8C")
         XCTAssertNotNil(updatedActivity.updatedAt)
     }
@@ -110,7 +108,7 @@ final class DataServiceTests: XCTestCase {
         // Given
         let activity = try await dataService.createActivity(
             name: "Test Activity",
-            type: "numeric",
+            type: .numeric,
             color: "#CD3A2E"
         )
         
@@ -128,18 +126,16 @@ final class DataServiceTests: XCTestCase {
         // Given
         let activity = try await dataService.createActivity(
             name: "Test Activity",
-            type: "numeric",
+            type: .numeric,
             color: "#CD3A2E"
         )
         let numericValue = 5.0
-        let sessionDate = Date()
         
         // When
         let session = try await dataService.createSession(
             for: activity,
-            sessionDate: sessionDate,
-            numericValue: numericValue,
-            duration: nil
+            duration: nil,
+            numericValue: numericValue
         )
         
         // Then
@@ -156,18 +152,15 @@ final class DataServiceTests: XCTestCase {
         // Given
         let activity = try await dataService.createActivity(
             name: "Test Activity",
-            type: "timer",
+            type: .timer,
             color: "#CD3A2E"
         )
         let duration = 300.0 // 5 minutes
-        let sessionDate = Date()
-        
         // When
         let session = try await dataService.createSession(
             for: activity,
-            sessionDate: sessionDate,
-            numericValue: nil,
-            duration: duration
+            duration: duration,
+            numericValue: nil
         )
         
         // Then
@@ -182,21 +175,19 @@ final class DataServiceTests: XCTestCase {
         // Given
         let activity = try await dataService.createActivity(
             name: "Test Activity",
-            type: "numeric",
+            type: .numeric,
             color: "#CD3A2E"
         )
         
         let session1 = try await dataService.createSession(
             for: activity,
-            sessionDate: Date(),
-            numericValue: 1.0,
-            duration: nil
+            duration: nil,
+            numericValue: 1.0
         )
         let session2 = try await dataService.createSession(
             for: activity,
-            sessionDate: Date(),
-            numericValue: 2.0,
-            duration: nil
+            duration: nil,
+            numericValue: 2.0
         )
         
         // When
@@ -212,14 +203,13 @@ final class DataServiceTests: XCTestCase {
         // Given
         let activity = try await dataService.createActivity(
             name: "Test Activity",
-            type: "numeric",
+            type: .numeric,
             color: "#CD3A2E"
         )
         let session = try await dataService.createSession(
             for: activity,
-            sessionDate: Date(),
-            numericValue: 1.0,
-            duration: nil
+            duration: nil,
+            numericValue: 1.0
         )
         
         // When
@@ -236,25 +226,28 @@ final class DataServiceTests: XCTestCase {
         // Given
         let activity = try await dataService.createActivity(
             name: "Test Activity",
-            type: "numeric",
+            type: .numeric,
             color: "#CD3A2E"
         )
         
         let today = Date()
         let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
-        
-        _ = try await dataService.createSession(
+
+        var s1 = try await dataService.createSession(
             for: activity,
-            sessionDate: today,
-            numericValue: 5.0,
-            duration: nil
+            duration: nil,
+            numericValue: 5.0
         )
-        _ = try await dataService.createSession(
+        s1.sessionDate = today
+        _ = try await dataService.updateSession(s1)
+
+        var s2 = try await dataService.createSession(
             for: activity,
-            sessionDate: yesterday,
-            numericValue: 3.0,
-            duration: nil
+            duration: nil,
+            numericValue: 3.0
         )
+        s2.sessionDate = yesterday
+        _ = try await dataService.updateSession(s2)
         
         // When
         let todayTotal = try await dataService.getTodayTotal(for: activity)
@@ -269,7 +262,7 @@ final class DataServiceTests: XCTestCase {
         // Given
         let activity = try await dataService.createActivity(
             name: "Test Activity",
-            type: "numeric",
+            type: .numeric,
             color: "#CD3A2E"
         )
         
@@ -277,24 +270,29 @@ final class DataServiceTests: XCTestCase {
         let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
         let twoDaysAgo = Calendar.current.date(byAdding: .day, value: -2, to: today)!
         
-        _ = try await dataService.createSession(
+        var sToday = try await dataService.createSession(
             for: activity,
-            sessionDate: today,
-            numericValue: 1.0,
-            duration: nil
+            duration: nil,
+            numericValue: 1.0
         )
-        _ = try await dataService.createSession(
+        sToday.sessionDate = today
+        _ = try await dataService.updateSession(sToday)
+
+        var sYesterday = try await dataService.createSession(
             for: activity,
-            sessionDate: yesterday,
-            numericValue: 1.0,
-            duration: nil
+            duration: nil,
+            numericValue: 1.0
         )
-        _ = try await dataService.createSession(
+        sYesterday.sessionDate = yesterday
+        _ = try await dataService.updateSession(sYesterday)
+
+        var sTwoDaysAgo = try await dataService.createSession(
             for: activity,
-            sessionDate: twoDaysAgo,
-            numericValue: 1.0,
-            duration: nil
+            duration: nil,
+            numericValue: 1.0
         )
+        sTwoDaysAgo.sessionDate = twoDaysAgo
+        _ = try await dataService.updateSession(sTwoDaysAgo)
         
         // When
         let currentStreak = try await dataService.getCurrentStreak(for: activity)
@@ -314,7 +312,7 @@ final class DataServiceTests: XCTestCase {
                     for i in 0..<100 {
                         _ = try await dataService.createActivity(
                             name: "Activity \(i)",
-                            type: "numeric",
+                            type: .numeric,
                             color: "#CD3A2E"
                         )
                     }
@@ -333,7 +331,7 @@ final class DataServiceTests: XCTestCase {
         for i in 0..<50 {
             _ = try await dataService.createActivity(
                 name: "Activity \(i)",
-                type: "numeric",
+                type: .numeric,
                 color: "#CD3A2E"
             )
         }
