@@ -10,6 +10,7 @@ struct ActivityDetailView: View {
     @StateObject private var viewModel = ActivityDetailViewModel()
     @State private var showingEditActivity = false
     @State private var showingDeleteConfirmation = false
+    @State private var showingSessionsList = false
     
     var body: some View {
         NavigationView {
@@ -51,6 +52,10 @@ struct ActivityDetailView: View {
         }
         .sheet(isPresented: $showingEditActivity) {
             EditActivityView(activity: activity)
+                .environment(\.managedObjectContext, viewContext)
+        }
+        .sheet(isPresented: $showingSessionsList) {
+            ActivitySessionsListView(activity: activity)
                 .environment(\.managedObjectContext, viewContext)
         }
         .alert("activity.delete.confirmation.title", isPresented: $showingDeleteConfirmation) {
@@ -213,7 +218,7 @@ struct ActivityDetailView: View {
                 Spacer()
                 
                 Button("activity.detail.view_all") {
-                    // TODO: Navigate to sessions list
+                    showingSessionsList = true
                 }
                 .font(DesignSystem.Typography.subheadline)
                 .foregroundColor(DesignSystem.Colors.primary)
