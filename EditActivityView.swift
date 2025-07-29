@@ -275,8 +275,7 @@ class EditActivityViewModel: ObservableObject {
             try context.save()
             
             // Haptic feedback
-            let notificationFeedback = UINotificationFeedbackGenerator()
-            notificationFeedback.notificationOccurred(.success)
+            HapticManager.notification(.success)
             
             isLoading = false
             return true

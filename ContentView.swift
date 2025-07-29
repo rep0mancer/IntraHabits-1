@@ -268,10 +268,9 @@ class ActivityListViewModel: ObservableObject {
         
         do {
             try context.save()
-            
+
             // Haptic feedback
-            let notificationFeedback = UINotificationFeedbackGenerator()
-            notificationFeedback.notificationOccurred(.success)
+            HapticManager.notification(.success)
             
         } catch {
             errorMessage = error.localizedDescription

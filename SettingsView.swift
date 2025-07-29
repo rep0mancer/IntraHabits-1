@@ -40,6 +40,7 @@ struct SettingsView: View {
         .alert("settings.reset.confirmation.title", isPresented: $showingResetConfirmation) {
             Button("settings.reset.confirmation.cancel", role: .cancel) { }
             Button("settings.reset.confirmation.continue", role: .destructive) {
+                HapticManager.notification(.warning)
                 showingResetFinalConfirmation = true
             }
         } message: {
@@ -48,6 +49,7 @@ struct SettingsView: View {
         .alert("settings.reset.final.title", isPresented: $showingResetFinalConfirmation) {
             Button("settings.reset.final.cancel", role: .cancel) { }
             Button("settings.reset.final.confirm", role: .destructive) {
+                HapticManager.notification(.warning)
                 viewModel.resetAllData()
             }
         } message: {

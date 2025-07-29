@@ -153,6 +153,7 @@ struct PaywallView: View {
     // MARK: - Purchase Button
     private var purchaseButton: some View {
         Button(action: {
+            HapticManager.impact(.heavy)
             Task {
                 await purchaseManager.purchaseUnlimitedActivities()
             }
@@ -311,6 +312,7 @@ struct PaywallTriggerView: View {
             // Buttons
             VStack(spacing: DesignSystem.Spacing.md) {
                 Button("paywall.upgrade_now") {
+                    HapticManager.impact(.heavy)
                     showingPaywall = true
                 }
                 .buttonStyle(PrimaryButtonStyle())
