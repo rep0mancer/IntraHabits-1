@@ -286,8 +286,7 @@ class TimerViewModel: ObservableObject {
         startTimerLoop()
         
         // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
+        HapticManager.impact(.medium)
     }
     
     func pauseTimer() {
@@ -298,8 +297,7 @@ class TimerViewModel: ObservableObject {
         stopTimerLoop()
         
         // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-        impactFeedback.impactOccurred()
+        HapticManager.impact(.light)
     }
     
     func resumeTimer() {
@@ -311,8 +309,7 @@ class TimerViewModel: ObservableObject {
         startTimerLoop()
         
         // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
+        HapticManager.impact(.medium)
     }
     
     func stopTimer() {
@@ -320,8 +317,7 @@ class TimerViewModel: ObservableObject {
         stopTimerLoop()
         
         // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-        impactFeedback.impactOccurred()
+        HapticManager.impact(.light)
     }
     
     func saveSession() {
@@ -346,8 +342,7 @@ class TimerViewModel: ObservableObject {
             pausedDuration = 0
             
             // Haptic feedback
-            let notificationFeedback = UINotificationFeedbackGenerator()
-            notificationFeedback.notificationOccurred(.success)
+            HapticManager.notification(.success)
             
         } catch {
             AppLogger.error("Error saving timer session: \(error)")

@@ -61,6 +61,7 @@ struct ActivityDetailView: View {
         .alert("activity.delete.confirmation.title", isPresented: $showingDeleteConfirmation) {
             Button("common.cancel", role: .cancel) { }
             Button("common.delete", role: .destructive) {
+                HapticManager.notification(.warning)
                 deleteActivity()
             }
         } message: {
@@ -364,8 +365,7 @@ class ActivityDetailViewModel: ObservableObject {
             loadRecentSessions()
             
             // Haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            HapticManager.impact(.medium)
 
         } catch {
             AppLogger.error("Error saving session: \(error)")

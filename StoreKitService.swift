@@ -68,8 +68,7 @@ class StoreKitService: ObservableObject {
                 await transaction.finish()
                 
                 // Haptic feedback
-                let notificationFeedback = UINotificationFeedbackGenerator()
-                notificationFeedback.notificationOccurred(.success)
+                HapticManager.notification(.success)
                 
                 return .success
                 
@@ -97,8 +96,7 @@ class StoreKitService: ObservableObject {
             
             if hasUnlimitedActivities {
                 // Haptic feedback
-                let notificationFeedback = UINotificationFeedbackGenerator()
-                notificationFeedback.notificationOccurred(.success)
+                HapticManager.notification(.success)
                 
                 return .success
             } else {

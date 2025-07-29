@@ -94,8 +94,7 @@ class ActivityCardViewModel: ObservableObject {
             updateDisplayValues()
             
             // Haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            HapticManager.impact(.medium)
         } catch {
             AppLogger.error("Error saving session: \(error)")
         }

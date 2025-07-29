@@ -153,7 +153,8 @@ struct AddActivityView: View {
             Divider()
                 .background(DesignSystem.Colors.systemGray5)
             
-            Button(action: { 
+            Button(action: {
+                HapticManager.impact(.medium)
                 Task {
                     let success = await viewModel.createActivity()
                     if success {
@@ -273,8 +274,7 @@ class AddActivityViewModel: ObservableObject {
             try context.save()
             
             // Haptic feedback
-            let notificationFeedback = UINotificationFeedbackGenerator()
-            notificationFeedback.notificationOccurred(.success)
+            HapticManager.notification(.success)
             
             isLoading = false
             return true
