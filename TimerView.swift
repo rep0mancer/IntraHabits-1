@@ -377,45 +377,9 @@ class TimerViewModel: ObservableObject {
     }
 
     private func updateStreaks(for activity: Activity) {
-        guard let sessions = activity.sessions?.allObjects as? [ActivitySession] else {
-            activity.currentStreak = 0
-            activity.longestStreak = 0
-            return
-        }
-
-        let calendar = Calendar.current
-        let sessionDates = sessions.compactMap { $0.sessionDate }.map { calendar.startOfDay(for: $0) }
-
-        let sortedDesc = Array(Set(sessionDates)).sorted(by: >)
-        var current = 0
-        var datePointer = calendar.startOfDay(for: Date())
-        for date in sortedDesc {
-            if calendar.isDate(date, inSameDayAs: datePointer) {
-                current += 1
-                if let new = calendar.date(byAdding: .day, value: -1, to: datePointer) {
-                    datePointer = new
-                }
-            } else if date < datePointer {
-                break
-            }
-        }
-
-        let sortedAsc = Array(Set(sessionDates)).sorted()
-        var maxStreak = 0
-        var streak = 0
-        for i in 0..<sortedAsc.count {
-            if i == 0 { streak = 1; maxStreak = 1; continue }
-            let prev = sortedAsc[i - 1]
-            if calendar.dateInterval(of: .day, for: prev)?.end == sortedAsc[i] {
-                streak += 1
-                maxStreak = max(maxStreak, streak)
-            } else {
-                streak = 1
-            }
-        }
-
-        activity.currentStreak = Int32(current)
-        activity.longestStreak = Int32(maxStreak)
+        let streaks = Activity.calculateStreaks(for: activity)
+        activity.currentStreak = Int32(streaks.current)
+        activity.longestStreak = Int32(streaks.longest)
     }
     
     private func formatDuration(_ duration: TimeInterval) -> String {
