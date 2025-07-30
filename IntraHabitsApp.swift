@@ -4,17 +4,26 @@ import CoreData
 @main
 struct IntraHabitsApp: App {
     @StateObject private var persistenceController = PersistenceController.shared
+    @StateObject private var errorHandler = AppDependencies.shared.errorHandler
     @State private var persistenceError: Error?
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .withNavigationCoordinator()
                 .preferredColorScheme(.dark)
                 .onAppear {
                     setupAppearance()
                     persistenceError = persistenceController.loadError
+                }
+                .environmentObject(errorHandler)
+                .alert(isPresented: $errorHandler.showingAlert) {
+                    Alert(
+                        title: Text("Error"),
+                        message: Text(errorHandler.currentError?.localizedDescription ?? "Unknown error"),
+                        dismissButton: .default(Text("OK"))
+                    )
                 }
                 .alert("Persistence Error", isPresented: Binding(get: { persistenceError != nil }, set: { _ in persistenceError = nil })) {
                     Button("OK", role: .cancel) {}

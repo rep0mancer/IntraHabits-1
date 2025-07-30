@@ -253,7 +253,7 @@ class AddActivityViewModel: ObservableObject {
             let existingActivities = try context.fetch(request)
 
             // Check if user has unlocked unlimited activities
-            let hasUnlimitedActivities = StoreKitService.shared.hasUnlimitedActivities
+            let hasUnlimitedActivities = AppDependencies.shared.storeService.hasUnlimitedActivities
             
             if existingActivities.count >= 5 && !hasUnlimitedActivities {
                 shouldShowPaywall = true
@@ -279,8 +279,10 @@ class AddActivityViewModel: ObservableObject {
             isLoading = false
             return true
             
-        } catch {
-            errorMessage = error.localizedDescription
+       } catch {
+            DispatchQueue.main.async {
+                AppDependencies.shared.errorHandler.handle(error)
+            }
             isLoading = false
             return false
         }

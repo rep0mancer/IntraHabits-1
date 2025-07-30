@@ -4,7 +4,7 @@ import StoreKit
 struct PaywallView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var coordinator: NavigationCoordinator
-    @StateObject private var storeKitService = StoreKitService.shared
+    @StateObject private var storeKitService = AppDependencies.shared.storeService
     @StateObject private var purchaseManager = PurchaseManager()
     
     var body: some View {
@@ -283,7 +283,7 @@ struct PaywallFeature {
 
 // MARK: - Paywall Trigger View
 struct PaywallTriggerView: View {
-    @StateObject private var storeKitService = StoreKitService.shared
+    @StateObject private var storeKitService = AppDependencies.shared.storeService
     @State private var showingPaywall = false
     
     let currentActivityCount: Int

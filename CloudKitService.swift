@@ -4,7 +4,7 @@ import CoreData
 import Combine
 
 class CloudKitService: ObservableObject {
-    static let shared = CloudKitService()
+    @Published var isSignedIn = false
     
     @Published var syncStatus: SyncStatus = .idle
     @Published var lastSyncDate: Date?
@@ -23,13 +23,14 @@ class CloudKitService: ObservableObject {
     private let syncInterval: TimeInterval = 30 // 30 seconds
     private var syncTimer: Timer?
     
-    private init() {
-        self.container = CKContainer(identifier: "iCloud.com.intrahabits.app")
+    init(container: CKContainer = CKContainer(identifier: "iCloud.com.intrahabits.app")) {
+        self.container = container
         self.privateDatabase = container.privateCloudDatabase
         self.publicDatabase = container.publicCloudDatabase
-        
+
         setupNotifications()
         startPeriodicSync()
+        Task { await checkAccountStatus() }
     }
     
     deinit {
@@ -57,18 +58,19 @@ class CloudKitService: ObservableObject {
     
     // MARK: - Account Status
     
-    func checkAccountStatus() async -> CKAccountStatus {
+    @MainActor
+    func checkAccountStatus() async {
         do {
-            return try await container.accountStatus()
+            let status = try await container.accountStatus()
+            isSignedIn = status == .available
         } catch {
-            AppLogger.error("Error checking CloudKit account status: \(error)")
-            return .couldNotDetermine
+            isSignedIn = false
         }
     }
-    
+
     func isCloudKitAvailable() async -> Bool {
-        let status = await checkAccountStatus()
-        return status == .available
+        await checkAccountStatus()
+        return isSignedIn
     }
     
     // MARK: - Sync Operations
@@ -100,6 +102,9 @@ class CloudKitService: ObservableObject {
             syncError = error
             syncStatus = .failed
             AppLogger.error("Sync failed: \(error)")
+            DispatchQueue.main.async {
+                AppDependencies.shared.errorHandler.handle(error)
+            }
         }
     }
     
