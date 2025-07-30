@@ -262,14 +262,27 @@ class EditActivityViewModel: ObservableObject {
         errorMessage = nil
         
         do {
+            let tempActivity = Activity(context: context)
+            tempActivity.name = activityName.trimmingCharacters(in: .whitespacesAndNewlines)
+            tempActivity.color = selectedColor
+            tempActivity.type = selectedType.rawValue
+
+            let validation = tempActivity.validate()
+            if !validation.isValid {
+                errorMessage = validation.errors.first
+                isLoading = false
+                context.delete(tempActivity)
+                return false
+            }
+
             // Update activity properties
-            activity.name = activityName.trimmingCharacters(in: .whitespacesAndNewlines)
-            activity.color = selectedColor
+            activity.name = tempActivity.name
+            activity.color = tempActivity.color
             activity.updatedAt = Date()
-            
+
             // Only update type if no existing sessions
             if !hasExistingSessions {
-                activity.type = selectedType.rawValue
+                activity.type = tempActivity.type
             }
             
             try context.save()

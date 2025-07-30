@@ -247,7 +247,7 @@ class AddActivityViewModel: ObservableObject {
         
         // Check activity limit for paywall
         let request: NSFetchRequest<Activity> = Activity.fetchRequest()
-        request.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
+        request.predicate = NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true))
         
         do {
             let existingActivities = try context.fetch(request)
@@ -261,19 +261,31 @@ class AddActivityViewModel: ObservableObject {
                 return false
             }
             
+            let tempActivity = Activity(context: context)
+            tempActivity.name = activityName.trimmingCharacters(in: .whitespacesAndNewlines)
+            tempActivity.color = selectedColor
+            tempActivity.type = selectedType.rawValue
+
+            let validation = tempActivity.validate()
+            if !validation.isValid {
+                errorMessage = validation.errors.first
+                isLoading = false
+                context.delete(tempActivity)
+                return false
+            }
+
             let activity = Activity(context: context)
             activity.id = UUID()
-            activity.name = activityName.trimmingCharacters(in: .whitespacesAndNewlines)
-            activity.type = selectedType.rawValue
-            activity.color = selectedColor
+            activity.name = tempActivity.name
+            activity.type = tempActivity.type
+            activity.color = tempActivity.color
             activity.createdAt = Date()
             activity.updatedAt = Date()
             activity.isActive = true
             activity.sortOrder = Int32(existingActivities.count)
-            
+
             try context.save()
-            
-            // Haptic feedback
+
             HapticManager.notification(.success)
             
             isLoading = false

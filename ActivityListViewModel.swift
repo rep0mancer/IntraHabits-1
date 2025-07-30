@@ -20,7 +20,7 @@ class ActivityListViewModel: ObservableObject {
         
         let request: NSFetchRequest<Activity> = Activity.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)]
-        request.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
+        request.predicate = NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true))
         
         do {
             activities = try context.fetch(request)
@@ -92,9 +92,6 @@ class ActivityCardViewModel: ObservableObject {
         do {
             try context.save()
             updateDisplayValues()
-            
-            // Haptic feedback
-            HapticManager.impact(.medium)
         } catch {
             AppLogger.error("Error saving session: \(error)")
         }
