@@ -7,7 +7,12 @@ struct TimerView: View {
     @Environment(\.dismiss) private var dismiss
     
     @ObservedObject var activity: Activity
-    @StateObject private var viewModel = TimerViewModel()
+    @StateObject private var viewModel: TimerViewModel
+
+    init(activity: Activity) {
+        self.activity = activity
+        _viewModel = StateObject(wrappedValue: TimerViewModel(activity: activity, context: PersistenceController.shared.container.viewContext))
+    }
     
     var body: some View {
         ZStack {
@@ -35,9 +40,6 @@ struct TimerView: View {
             }
             .padding(DesignSystem.Spacing.lg)
         }
-        .onAppear {
-            viewModel.setActivity(activity, context: viewContext)
-        }
         .onDisappear {
             viewModel.stopTimer()
         }
@@ -46,7 +48,9 @@ struct TimerView: View {
                 viewModel.discardSession()
             }
             Button("timer.save.save") {
-                viewModel.saveSession()
+                if viewModel.saveSession() {
+                    HapticManager.notification(.success)
+                }
                 dismiss()
             }
         } message: {
@@ -148,6 +152,7 @@ struct TimerView: View {
         HStack(spacing: DesignSystem.Spacing.lg) {
             // Stop Button
             Button(action: {
+                HapticManager.impact(.light)
                 viewModel.stopTimer()
                 if viewModel.currentDuration > 0 {
                     viewModel.showingSaveConfirmation = true
@@ -167,10 +172,13 @@ struct TimerView: View {
             Button(action: {
                 switch viewModel.timerState {
                 case .stopped:
+                    HapticManager.impact(.medium)
                     viewModel.startTimer()
                 case .running:
+                    HapticManager.impact(.light)
                     viewModel.pauseTimer()
                 case .paused:
+                    HapticManager.impact(.medium)
                     viewModel.resumeTimer()
                 }
             }) {
@@ -183,11 +191,11 @@ struct TimerView: View {
                     .scaleEffect(viewModel.timerState == .running ? 1.1 : 1.0)
                     .animation(.easeInOut(duration: 0.2), value: viewModel.timerState)
             }
-            .hapticFeedback(.medium)
-            
             // Save Button
             Button(action: {
-                viewModel.saveSession()
+                if viewModel.saveSession() {
+                    HapticManager.notification(.success)
+                }
                 dismiss()
             }) {
                 Image(systemName: "checkmark")
@@ -250,23 +258,18 @@ class TimerViewModel: ObservableObject {
     @Published var showingSaveConfirmation = false
     @Published var errorMessage: String?
     
-    private var activity: Activity?
-    private var viewContext: NSManagedObjectContext?
+    private let activity: Activity
+    private let viewContext: NSManagedObjectContext
     private var timer: Timer?
     private var startTime: Date?
     private var pausedDuration: TimeInterval = 0
     private var cancellables = Set<AnyCancellable>()
-    
-    var formattedTime: String {
-        formatDuration(currentDuration)
-    }
-    
-    func setActivity(_ activity: Activity, context: NSManagedObjectContext) {
+
+    init(activity: Activity, context: NSManagedObjectContext) {
         self.activity = activity
         self.viewContext = context
         updateTodaysTotal()
-        
-        // Listen for context changes
+
         NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
             .sink { [weak self] _ in
                 DispatchQueue.main.async {
@@ -276,6 +279,11 @@ class TimerViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
+    var formattedTime: String {
+        formatDuration(currentDuration)
+    }
+    
+    
     func startTimer() {
         guard timerState == .stopped else { return }
         
@@ -284,10 +292,6 @@ class TimerViewModel: ObservableObject {
         pausedDuration = 0
         
         startTimerLoop()
-        
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
     }
     
     func pauseTimer() {
@@ -296,10 +300,6 @@ class TimerViewModel: ObservableObject {
         timerState = .paused
         pausedDuration = currentDuration
         stopTimerLoop()
-        
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-        impactFeedback.impactOccurred()
     }
     
     func resumeTimer() {
@@ -309,26 +309,19 @@ class TimerViewModel: ObservableObject {
         startTime = Date().addingTimeInterval(-pausedDuration)
         
         startTimerLoop()
-        
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-        impactFeedback.impactOccurred()
     }
     
     func stopTimer() {
         timerState = .stopped
         stopTimerLoop()
-        
-        // Haptic feedback
-        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-        impactFeedback.impactOccurred()
     }
     
-    func saveSession() {
-        guard let activity = activity,
-              let context = viewContext,
-              currentDuration > 0 else { return }
-        
+    
+    func saveSession() -> Bool {
+        let activity = activity
+        let context = viewContext
+        guard currentDuration > 0 else { return false }
+
         let session = ActivitySession(context: context)
         session.id = UUID()
         session.activity = activity
@@ -336,23 +329,24 @@ class TimerViewModel: ObservableObject {
         session.duration = currentDuration
         session.createdAt = Date()
         session.isCompleted = true
-        
+
         do {
+            updateStreaks(for: activity)
             try context.save()
-            
+
             // Reset timer
             currentDuration = 0
             timerState = .stopped
             pausedDuration = 0
-            
-            // Haptic feedback
-            let notificationFeedback = UINotificationFeedbackGenerator()
-            notificationFeedback.notificationOccurred(.success)
-            
+
+            return true
         } catch {
-            AppLogger.error("Error saving timer session: \(error)")
+            AppLogger.error("Error saving timer session: (error)")
             errorMessage = error.localizedDescription
+            return false
         }
+    }
+        
     }
     
     func discardSession() {
@@ -379,8 +373,13 @@ class TimerViewModel: ObservableObject {
     }
     
     private func updateTodaysTotal() {
-        guard let activity = activity else { return }
         todaysFormattedTotal = activity.todaysFormattedTotal()
+    }
+
+    private func updateStreaks(for activity: Activity) {
+        let streaks = Activity.calculateStreaks(for: activity)
+        activity.currentStreak = Int32(streaks.current)
+        activity.longestStreak = Int32(streaks.longest)
     }
     
     private func formatDuration(_ duration: TimeInterval) -> String {

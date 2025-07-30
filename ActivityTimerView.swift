@@ -199,12 +199,14 @@ struct ActivityTimerView: View {
             Spacer()
             
             // Open app button
-            Button(intent: OpenActivityIntent(activity: entry.activity!)) {
-                Image(systemName: "arrow.up.right.square")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+            if let activity = entry.activity {
+                Button(intent: OpenActivityIntent(activity: activity)) {
+                    Image(systemName: "arrow.up.right.square")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
     }
     

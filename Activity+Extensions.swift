@@ -30,19 +30,21 @@ extension Activity {
     var isNumericType: Bool {
         return activityType == .numeric
     }
-    
+
+    private func sessions(for dateRange: ClosedRange<Date>) -> [ActivitySession] {
+        guard let allSessions = sessions?.allObjects as? [ActivitySession] else { return [] }
+        return allSessions.filter { session in
+            guard let sessionDate = session.sessionDate else { return false }
+            return dateRange.contains(sessionDate)
+        }
+    }
+
     // MARK: - Session Statistics
     func todaysSessions() -> [ActivitySession] {
-        guard let sessions = sessions?.allObjects as? [ActivitySession] else { return [] }
-        
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
-        
-        return sessions.filter { session in
-            guard let sessionDate = session.sessionDate else { return false }
-            return sessionDate >= today && sessionDate < tomorrow
-        }
+        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else { return [] }
+        return sessions(for: today...tomorrow)
     }
     
     func todaysTotal() -> Double {
@@ -66,15 +68,10 @@ extension Activity {
     }
     
     func weeklyTotal() -> Double {
-        guard let sessions = sessions?.allObjects as? [ActivitySession] else { return 0 }
-        
         let calendar = Calendar.current
-        let weekAgo = calendar.date(byAdding: .day, value: -7, to: Date())!
-        
-        let weeklySessions = sessions.filter { session in
-            guard let sessionDate = session.sessionDate else { return false }
-            return sessionDate >= weekAgo
-        }
+        guard let weekAgo = calendar.date(byAdding: .day, value: -7, to: Date()) else { return 0 }
+        let range = weekAgo...Date()
+        let weeklySessions = sessions(for: range)
         
         if isTimerType {
             return weeklySessions.reduce(0) { $0 + $1.duration }
@@ -84,15 +81,10 @@ extension Activity {
     }
     
     func monthlyTotal() -> Double {
-        guard let sessions = sessions?.allObjects as? [ActivitySession] else { return 0 }
-        
         let calendar = Calendar.current
-        let monthAgo = calendar.date(byAdding: .month, value: -1, to: Date())!
-        
-        let monthlySessions = sessions.filter { session in
-            guard let sessionDate = session.sessionDate else { return false }
-            return sessionDate >= monthAgo
-        }
+        guard let monthAgo = calendar.date(byAdding: .month, value: -1, to: Date()) else { return 0 }
+        let range = monthAgo...Date()
+        let monthlySessions = sessions(for: range)
         
         if isTimerType {
             return monthlySessions.reduce(0) { $0 + $1.duration }
@@ -106,7 +98,7 @@ extension Activity {
         
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return 0 }
         
         let daySessions = sessions.filter { session in
             guard let sessionDate = session.sessionDate else { return false }
@@ -122,61 +114,50 @@ extension Activity {
     
     // MARK: - Streak Calculation
     func currentStreak() -> Int {
-        guard let sessions = sessions?.allObjects as? [ActivitySession] else { return 0 }
-        
+        return Int(self.currentStreak)
+    }
+
+    func longestStreak() -> Int {
+        return Int(self.longestStreak)
+    }
+
+    static func calculateStreaks(for activity: Activity) -> (current: Int, longest: Int) {
+        guard let sessions = activity.sessions?.allObjects as? [ActivitySession] else {
+            return (current: 0, longest: 0)
+        }
+
         let calendar = Calendar.current
-        let sortedSessions = sessions
-            .compactMap { $0.sessionDate }
-            .map { calendar.startOfDay(for: $0) }
-            .sorted(by: >)
-        
-        guard !sortedSessions.isEmpty else { return 0 }
-        
-        let uniqueDates = Array(Set(sortedSessions)).sorted(by: >)
-        let today = calendar.startOfDay(for: Date())
-        
-        var streak = 0
-        var currentDate = today
-        
-        for date in uniqueDates {
-            if calendar.isDate(date, inSameDayAs: currentDate) {
-                streak += 1
-                currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate)!
-            } else if date < currentDate {
+        let sessionDates = sessions.compactMap { $0.sessionDate }.map { calendar.startOfDay(for: $0) }
+
+        let sortedDesc = Array(Set(sessionDates)).sorted(by: >)
+        var current = 0
+        var datePointer = calendar.startOfDay(for: Date())
+        for date in sortedDesc {
+            if calendar.isDate(date, inSameDayAs: datePointer) {
+                current += 1
+                if let new = calendar.date(byAdding: .day, value: -1, to: datePointer) {
+                    datePointer = new
+                }
+            } else if date < datePointer {
                 break
             }
         }
-        
-        return streak
-    }
-    
-    func longestStreak() -> Int {
-        guard let sessions = sessions?.allObjects as? [ActivitySession] else { return 0 }
-        
-        let calendar = Calendar.current
-        let uniqueDates = Array(Set(sessions
-            .compactMap { $0.sessionDate }
-            .map { calendar.startOfDay(for: $0) }
-        )).sorted()
-        
-        guard !uniqueDates.isEmpty else { return 0 }
-        
-        var maxStreak = 1
-        var currentStreak = 1
-        
-        for i in 1..<uniqueDates.count {
-            let previousDate = uniqueDates[i - 1]
-            let currentDate = uniqueDates[i]
-            
-            if calendar.dateInterval(of: .day, for: previousDate)?.end == currentDate {
-                currentStreak += 1
-                maxStreak = max(maxStreak, currentStreak)
+
+        let sortedAsc = Array(Set(sessionDates)).sorted()
+        var maxStreak = 0
+        var streak = 0
+        for i in 0..<sortedAsc.count {
+            if i == 0 { streak = 1; maxStreak = 1; continue }
+            let prev = sortedAsc[i - 1]
+            if calendar.dateInterval(of: .day, for: prev)?.end == sortedAsc[i] {
+                streak += 1
+                maxStreak = max(maxStreak, streak)
             } else {
-                currentStreak = 1
+                streak = 1
             }
         }
-        
-        return maxStreak
+
+        return (current: current, longest: maxStreak)
     }
     
     // MARK: - Helper Methods
@@ -228,7 +209,7 @@ extension Activity {
     static func activitiesFetchRequest() -> NSFetchRequest<Activity> {
         let request: NSFetchRequest<Activity> = Activity.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)]
-        request.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
+        request.predicate = NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true))
         return request
     }
     

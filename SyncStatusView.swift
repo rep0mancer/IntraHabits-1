@@ -2,7 +2,7 @@ import SwiftUI
 import CloudKit
 
 struct SyncStatusView: View {
-    @StateObject private var cloudKitService = CloudKitService.shared
+    @StateObject private var cloudKitService = AppDependencies.shared.cloudService
     @State private var accountStatus: CKAccountStatus = .couldNotDetermine
     @State private var isCheckingAccount = false
     
@@ -271,9 +271,9 @@ struct SyncSettingsView: View {
                     Toggle("", isOn: $automaticSyncEnabled)
                         .onChange(of: automaticSyncEnabled) { enabled in
                             if enabled {
-                                CloudKitService.shared.enableAutomaticSync()
+                                AppDependencies.shared.cloudService.enableAutomaticSync()
                             } else {
-                                CloudKitService.shared.disableAutomaticSync()
+                                AppDependencies.shared.cloudService.disableAutomaticSync()
                             }
                         }
                 }

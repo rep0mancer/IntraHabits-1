@@ -6,7 +6,12 @@ struct EditActivityView: View {
     @Environment(\.dismiss) private var dismiss
     
     @ObservedObject var activity: Activity
-    @StateObject private var viewModel = EditActivityViewModel()
+    @StateObject private var viewModel: EditActivityViewModel
+
+    init(activity: Activity) {
+        self.activity = activity
+        _viewModel = StateObject(wrappedValue: EditActivityViewModel(activity: activity, context: PersistenceController.shared.container.viewContext))
+    }
     
     var body: some View {
         NavigationView {
@@ -39,9 +44,6 @@ struct EditActivityView: View {
                     }
                 }
             }
-        }
-        .onAppear {
-            viewModel.setActivity(activity, context: viewContext)
         }
         .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
             Button("OK") {
@@ -200,8 +202,8 @@ class EditActivityViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var hasExistingSessions = false
     
-    private var activity: Activity?
-    private var viewContext: NSManagedObjectContext?
+    private var activity: Activity
+    private let viewContext: NSManagedObjectContext
     private var originalName = ""
     private var originalType: ActivityType = .numeric
     private var originalColor = ""
@@ -217,27 +219,27 @@ class EditActivityViewModel: ObservableObject {
                selectedColor != originalColor
     }
     
-    func setActivity(_ activity: Activity, context: NSManagedObjectContext) {
+    init(activity: Activity, context: NSManagedObjectContext) {
         self.activity = activity
         self.viewContext = context
-        
+
         // Load current values
         activityName = activity.displayName
         selectedType = activity.activityType
         selectedColor = activity.color ?? DesignSystem.Colors.activityColors[0]
-        
+
         // Store original values
         originalName = activity.displayName
         originalType = activity.activityType
         originalColor = activity.color ?? DesignSystem.Colors.activityColors[0]
-        
+
         // Check if activity has existing sessions
         checkForExistingSessions()
     }
     
     private func checkForExistingSessions() {
-        guard let activity = activity,
-              let context = viewContext else { return }
+        let context = viewContext
+        let activity = activity
         
         let request = ActivitySession.sessionsForActivityFetchRequest(activity)
         request.fetchLimit = 1
@@ -253,30 +255,42 @@ class EditActivityViewModel: ObservableObject {
     
     @MainActor
     func saveChanges() async -> Bool {
-        guard let activity = activity,
-              let context = viewContext,
-              isFormValid,
+        let context = viewContext
+        let activity = activity
+        guard isFormValid,
               hasChanges else { return false }
         
         isLoading = true
         errorMessage = nil
         
         do {
+            let tempActivity = Activity(context: context)
+            tempActivity.name = activityName.trimmingCharacters(in: .whitespacesAndNewlines)
+            tempActivity.color = selectedColor
+            tempActivity.type = selectedType.rawValue
+
+            let validation = tempActivity.validate()
+            if !validation.isValid {
+                errorMessage = validation.errors.first
+                isLoading = false
+                context.delete(tempActivity)
+                return false
+            }
+
             // Update activity properties
-            activity.name = activityName.trimmingCharacters(in: .whitespacesAndNewlines)
-            activity.color = selectedColor
+            activity.name = tempActivity.name
+            activity.color = tempActivity.color
             activity.updatedAt = Date()
-            
+
             // Only update type if no existing sessions
             if !hasExistingSessions {
-                activity.type = selectedType.rawValue
+                activity.type = tempActivity.type
             }
             
             try context.save()
             
             // Haptic feedback
-            let notificationFeedback = UINotificationFeedbackGenerator()
-            notificationFeedback.notificationOccurred(.success)
+            HapticManager.notification(.success)
             
             isLoading = false
             return true

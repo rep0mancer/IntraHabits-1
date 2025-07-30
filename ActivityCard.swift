@@ -4,12 +4,17 @@ import CoreData
 struct ActivityCard: View {
     @Environment(\.managedObjectContext) private var viewContext
     @ObservedObject var activity: Activity
-    @StateObject private var viewModel = ActivityCardViewModel()
+    @StateObject var viewModel: ActivityCardViewModel
     @State private var showingTimer = false
     @State private var showingStepSelector = false
     @State private var selectedStepSize = 1
-    
+
     private let stepSizes = [1, 2, 5, 10, 25, 50]
+
+    init(activity: Activity, viewModel: ActivityCardViewModel = ActivityCardViewModel()) {
+        self.activity = activity
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
     
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.md) {
@@ -26,9 +31,6 @@ struct ActivityCard: View {
         }
         .padding(DesignSystem.Spacing.md)
         .cardStyle(backgroundColor: DesignSystem.Colors.secondaryBackground)
-        .onAppear {
-            viewModel.setActivity(activity, context: viewContext)
-        }
         .sheet(isPresented: $showingTimer) {
             TimerView(activity: activity)
                 .environment(\.managedObjectContext, viewContext)
@@ -113,12 +115,11 @@ struct ActivityCard: View {
     }
     
     private var numericActionButton: some View {
-        Button(action: { 
-            if selectedStepSize == 1 {
-                viewModel.incrementActivity(by: 1)
-            } else {
-                viewModel.incrementActivity(by: selectedStepSize)
-            }
+        Button(action: {
+            let step = selectedStepSize
+            let style: UIImpactFeedbackGenerator.FeedbackStyle = step > 1 ? .heavy : .medium
+            HapticManager.impact(style)
+            viewModel.incrementActivity(by: step)
         }) {
             HStack(spacing: 4) {
                 Image(systemName: "plus")
@@ -135,7 +136,6 @@ struct ActivityCard: View {
             .background(activity.displayColor)
             .cornerRadius(DesignSystem.CornerRadius.medium)
         }
-        .hapticFeedback(.medium)
         .onLongPressGesture {
             showingStepSelector = true
         }
@@ -149,6 +149,8 @@ struct ActivityCard: View {
             buttons: stepSizes.map { stepSize in
                 .default(Text("+\(stepSize)")) {
                     selectedStepSize = stepSize
+                    let style: UIImpactFeedbackGenerator.FeedbackStyle = stepSize > 1 ? .heavy : .medium
+                    HapticManager.impact(style)
                     viewModel.incrementActivity(by: stepSize)
                 }
             } + [.cancel()]
@@ -156,68 +158,6 @@ struct ActivityCard: View {
     }
 }
 
-// MARK: - Enhanced Activity Card View Model
-class ActivityCardViewModel: ObservableObject {
-    @Published var todaysFormattedValue: String = "0"
-    @Published var currentStreak: Int = 0
-    @Published var weeklyTotal: Double = 0
-    @Published var monthlyTotal: Double = 0
-    
-    private var activity: Activity?
-    private var viewContext: NSManagedObjectContext?
-    private var cancellables = Set<AnyCancellable>()
-    
-    func setActivity(_ activity: Activity, context: NSManagedObjectContext) {
-        self.activity = activity
-        self.viewContext = context
-        updateDisplayValues()
-        
-        // Listen for changes to update the display
-        NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
-            .sink { [weak self] _ in
-                DispatchQueue.main.async {
-                    self?.updateDisplayValues()
-                }
-            }
-            .store(in: &cancellables)
-    }
-    
-    func incrementActivity(by value: Int = 1) {
-        guard let activity = activity,
-              let context = viewContext,
-              activity.isNumericType else { return }
-        
-        let session = ActivitySession(context: context)
-        session.id = UUID()
-        session.activity = activity
-        session.sessionDate = Date()
-        session.numericValue = Double(value)
-        session.createdAt = Date()
-        session.isCompleted = true
-        
-        do {
-            try context.save()
-            updateDisplayValues()
-            
-            // Haptic feedback based on value
-            let impactStyle: UIImpactFeedbackGenerator.FeedbackStyle = value > 1 ? .heavy : .medium
-            let impactFeedback = UIImpactFeedbackGenerator(style: impactStyle)
-            impactFeedback.impactOccurred()
-            
-        } catch {
-            AppLogger.error("Error saving session: \(error)")
-        }
-    }
-    
-    private func updateDisplayValues() {
-        guard let activity = activity else { return }
-        
-        todaysFormattedValue = activity.todaysFormattedTotal()
-        currentStreak = activity.currentStreak()
-        weeklyTotal = activity.weeklyTotal()
-        monthlyTotal = activity.monthlyTotal()
-    }
-}
 
 // MARK: - Preview
 struct ActivityCard_Previews: PreviewProvider {

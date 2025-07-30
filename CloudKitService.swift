@@ -3,8 +3,13 @@ import CloudKit
 import CoreData
 import Combine
 
+private struct CloudKitConstants {
+    static let activityRecordType = "Activity"
+    static let sessionRecordType = "ActivitySession"
+}
+
 class CloudKitService: ObservableObject {
-    static let shared = CloudKitService()
+    @Published var isSignedIn = false
     
     @Published var syncStatus: SyncStatus = .idle
     @Published var lastSyncDate: Date?
@@ -16,25 +21,19 @@ class CloudKitService: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     // CloudKit Record Types
-    private let activityRecordType = "Activity"
-    private let sessionRecordType = "ActivitySession"
+    private let activityRecordType = CloudKitConstants.activityRecordType
+    private let sessionRecordType = CloudKitConstants.sessionRecordType
     
-    // Sync configuration
-    private let syncInterval: TimeInterval = 30 // 30 seconds
-    private var syncTimer: Timer?
     
-    private init() {
-        self.container = CKContainer(identifier: "iCloud.com.intrahabits.app")
+    init(container: CKContainer = CKContainer(identifier: "iCloud.com.intrahabits.app")) {
+        self.container = container
         self.privateDatabase = container.privateCloudDatabase
         self.publicDatabase = container.publicCloudDatabase
-        
+
         setupNotifications()
-        startPeriodicSync()
+        Task { await checkAccountStatus() }
     }
-    
-    deinit {
-        syncTimer?.invalidate()
-    }
+
     
     // MARK: - Public Interface
     
@@ -47,59 +46,80 @@ class CloudKitService: ObservableObject {
     }
     
     func enableAutomaticSync() {
-        startPeriodicSync()
+        // Scheduling handled by BGTask in the app
     }
-    
+
     func disableAutomaticSync() {
-        syncTimer?.invalidate()
-        syncTimer = nil
+        // No repeating timer to cancel
     }
     
     // MARK: - Account Status
     
-    func checkAccountStatus() async -> CKAccountStatus {
+    @MainActor
+    func checkAccountStatus() async {
         do {
-            return try await container.accountStatus()
+            let status = try await container.accountStatus()
+            isSignedIn = status == .available
         } catch {
-            AppLogger.error("Error checking CloudKit account status: \(error)")
-            return .couldNotDetermine
+            isSignedIn = false
         }
     }
-    
+
     func isCloudKitAvailable() async -> Bool {
-        let status = await checkAccountStatus()
-        return status == .available
+        await checkAccountStatus()
+        return isSignedIn
     }
     
     // MARK: - Sync Operations
     
-    @MainActor
     private func performFullSync() async {
+        // First, check account status and update UI on the main thread
         guard await isCloudKitAvailable() else {
-            syncError = CloudKitError.accountNotAvailable
+            await MainActor.run {
+                syncError = CloudKitError.accountNotAvailable
+                syncStatus = .failed
+            }
             return
         }
-        
-        syncStatus = .syncing
-        syncError = nil
-        
+
+        await MainActor.run {
+            syncStatus = .syncing
+            syncError = nil
+        }
+
+        // Perform all heavy lifting in a background task
         do {
-            // Upload local changes first
-            try await uploadLocalChanges()
-            
-            // Then download remote changes
-            try await downloadRemoteChanges()
-            
-            lastSyncDate = Date()
-            syncStatus = .completed
-            
-            // Save sync timestamp
-            UserDefaults.standard.set(lastSyncDate, forKey: "lastCloudKitSync")
-            
+            try await Task.detached(priority: .background) {
+                let context = PersistenceController.shared.container.newBackgroundContext()
+                // Upload local changes
+                try await self.uploadActivities(context: context)
+                try await self.uploadSessions(context: context)
+
+                // Download remote changes
+                try await self.downloadActivities()
+                try await self.downloadSessions()
+            }.value
+
+            // After the background work is done, update UI on the main thread
+            let syncDate = Date()
+            await MainActor.run {
+                lastSyncDate = syncDate
+                syncStatus = .completed
+            }
+            UserDefaults.standard.set(syncDate, forKey: "lastCloudKitSync")
+
+        } catch let error as CKError {
+            await MainActor.run {
+                self.syncError = error
+                self.syncStatus = .failed
+                AppLogger.error("Sync failed with CKError: \(error.localizedDescription)")
+            }
         } catch {
-            syncError = error
-            syncStatus = .failed
-            AppLogger.error("Sync failed: \(error)")
+            await MainActor.run {
+                self.syncError = error
+                self.syncStatus = .failed
+                AppLogger.error("Sync failed with non-CloudKit error: \(error)")
+            }
         }
     }
     
@@ -123,7 +143,7 @@ class CloudKitService: ObservableObject {
             let record = try createActivityRecord(from: activity)
             
             do {
-                let savedRecord = try await privateDatabase.save(record)
+                let savedRecord = try await saveRecordWithRetry(record)
                 
                 // Update local record with CloudKit metadata
                 await context.perform {
@@ -155,7 +175,7 @@ class CloudKitService: ObservableObject {
             let record = try createSessionRecord(from: session)
             
             do {
-                let savedRecord = try await privateDatabase.save(record)
+                let savedRecord = try await saveRecordWithRetry(record)
                 
                 // Update local record with CloudKit metadata
                 await context.perform {
@@ -227,7 +247,7 @@ class CloudKitService: ObservableObject {
         record["name"] = activity.name
         record["type"] = activity.type
         record["color"] = activity.color
-        record["isActive"] = activity.isActive ? 1 : 0
+        record["isActive"] = activity.isActive
         record["createdAt"] = activity.createdAt
         record["lastModifiedAt"] = Date()
         
@@ -242,7 +262,7 @@ class CloudKitService: ObservableObject {
         record["sessionDate"] = session.sessionDate
         record["duration"] = session.duration ?? 0
         record["numericValue"] = session.numericValue ?? 0
-        record["isCompleted"] = session.isCompleted ? 1 : 0
+        record["isCompleted"] = session.isCompleted
         record["createdAt"] = session.createdAt
         record["lastModifiedAt"] = Date()
         
@@ -283,7 +303,7 @@ class CloudKitService: ObservableObject {
                 activity.name = record["name"] as? String
                 activity.type = record["type"] as? String
                 activity.color = record["color"] as? String
-                activity.isActive = (record["isActive"] as? Int) == 1
+                activity.isActive = record["isActive"] as? Bool ?? false
                 activity.createdAt = record["createdAt"] as? Date
                 activity.lastModifiedAt = record["lastModifiedAt"] as? Date
                 activity.cloudKitRecordID = record.recordID.recordName
@@ -320,7 +340,7 @@ class CloudKitService: ObservableObject {
                 session.sessionDate = record["sessionDate"] as? Date
                 session.duration = record["duration"] as? Double
                 session.numericValue = record["numericValue"] as? Double
-                session.isCompleted = (record["isCompleted"] as? Int) == 1
+                session.isCompleted = record["isCompleted"] as? Bool ?? false
                 session.createdAt = record["createdAt"] as? Date
                 session.lastModifiedAt = record["lastModifiedAt"] as? Date
                 session.cloudKitRecordID = record.recordID.recordName
@@ -362,9 +382,34 @@ class CloudKitService: ObservableObject {
         guard let serverRecord = error.userInfo[CKRecordChangedErrorServerRecordKey] as? CKRecord else {
             throw error
         }
-        
+
         // Simple conflict resolution: server wins
         try await processSessionRecord(serverRecord)
+    }
+
+    private func saveRecordWithRetry(_ record: CKRecord, maxRetries: Int = 3) async throws -> CKRecord {
+        var attempt = 0
+        var delay: TimeInterval = 1.0
+        while attempt < maxRetries {
+            do {
+                let saved = try await privateDatabase.save(record)
+                return saved
+            } catch let error as CKError {
+                if error.code == .networkUnavailable || error.code == .serviceUnavailable || error.code == .zoneBusy {
+                    attempt += 1
+                    if attempt >= maxRetries { throw error }
+                    try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                    delay *= 2
+                } else if error.code == .serverRecordChanged {
+                    throw error
+                } else {
+                    throw error
+                }
+            } catch {
+                throw error
+            }
+        }
+        return record
     }
     
     // MARK: - Notifications
@@ -423,19 +468,6 @@ class CloudKitService: ObservableObject {
         }
     }
     
-    // MARK: - Periodic Sync
-    
-    private func startPeriodicSync() {
-        syncTimer?.invalidate()
-        
-        syncTimer = Timer.scheduledTimer(withTimeInterval: syncInterval, repeats: true) { [weak self] _ in
-            Task {
-                await self?.performFullSync()
-            }
-        }
-    }
-}
-
 // MARK: - Sync Status
 enum SyncStatus {
     case idle

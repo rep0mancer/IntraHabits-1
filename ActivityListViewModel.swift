@@ -4,26 +4,31 @@ import Combine
 
 class ActivityListViewModel: ObservableObject {
     @Published var activities: [Activity] = []
-    @Published var isLoading = false
+    @Published var cardViewModels: [UUID: ActivityCardViewModel] = [:]
     @Published var errorMessage: String?
-    
+
     private var viewContext: NSManagedObjectContext?
-    private var cancellables = Set<AnyCancellable>()
     
     func setContext(_ context: NSManagedObjectContext) {
         self.viewContext = context
-        loadActivities()
+        fetchActivities()
     }
-    
-    func loadActivities() {
+
+    func fetchActivities() {
         guard let context = viewContext else { return }
-        
         let request: NSFetchRequest<Activity> = Activity.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)]
-        request.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
-        
+        request.predicate = NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true))
         do {
             activities = try context.fetch(request)
+            cardViewModels.removeAll()
+            for activity in activities {
+                if let id = activity.id {
+                    let vm = ActivityCardViewModel()
+                    vm.setActivity(activity, context: context)
+                    cardViewModels[id] = vm
+                }
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -37,25 +42,23 @@ class ActivityListViewModel: ObservableObject {
         
         do {
             try context.save()
-            loadActivities()
         } catch {
             errorMessage = error.localizedDescription
         }
     }
     
-    func reorderActivities(from source: IndexSet, to destination: Int) {
+    func reorderActivities(from source: IndexSet, to destination: Int, items: [Activity]) {
         guard let context = viewContext else { return }
-        
-        var reorderedActivities = activities
+
+        var reorderedActivities = items
         reorderedActivities.move(fromOffsets: source, toOffset: destination)
-        
+
         for (index, activity) in reorderedActivities.enumerated() {
             activity.sortOrder = Int32(index)
         }
-        
+
         do {
             try context.save()
-            loadActivities()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -90,12 +93,9 @@ class ActivityCardViewModel: ObservableObject {
         session.isCompleted = true
         
         do {
+            updateStreaks(for: activity)
             try context.save()
             updateDisplayValues()
-            
-            // Haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
         } catch {
             AppLogger.error("Error saving session: \(error)")
         }
@@ -106,7 +106,7 @@ class ActivityCardViewModel: ObservableObject {
         
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
+        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else { return }
         
         let predicate = NSPredicate(format: "activity == %@ AND sessionDate >= %@ AND sessionDate < %@", 
                                   activity, today as NSDate, tomorrow as NSDate)
@@ -126,6 +126,12 @@ class ActivityCardViewModel: ObservableObject {
         } catch {
             AppLogger.error("Error fetching sessions: \(error)")
         }
+    }
+
+    private func updateStreaks(for activity: Activity) {
+        let streaks = Activity.calculateStreaks(for: activity)
+        activity.currentStreak = Int32(streaks.current)
+        activity.longestStreak = Int32(streaks.longest)
     }
     
     private func formatDuration(_ duration: TimeInterval) -> String {

@@ -12,7 +12,7 @@ struct CalendarView: View {
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)],
-        predicate: NSPredicate(format: "isActive == %@", NSNumber(value: true)),
+        predicate: NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true)),
         animation: .default
     )
     private var activities: FetchedResults<Activity>
@@ -396,7 +396,7 @@ class CalendarViewModel: ObservableObject {
         
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return }
         
         let request: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
         request.predicate = NSPredicate(format: "sessionDate >= %@ AND sessionDate < %@", 

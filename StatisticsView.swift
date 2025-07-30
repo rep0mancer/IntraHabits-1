@@ -583,7 +583,7 @@ class StatisticsViewModel: ObservableObject {
         var currentDate = dateRange.start
         while currentDate <= dateRange.end {
             let dayStart = calendar.startOfDay(for: currentDate)
-            let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+            guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { break }
             
             let daySessions = sessions.filter { session in
                 guard let sessionDate = session.sessionDate else { return false }
@@ -614,7 +614,7 @@ class StatisticsViewModel: ObservableObject {
         guard let context = viewContext else { return }
         
         let activityRequest: NSFetchRequest<Activity> = Activity.fetchRequest()
-        activityRequest.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
+        activityRequest.predicate = NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true))
         
         do {
             let activities = try context.fetch(activityRequest)

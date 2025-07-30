@@ -61,6 +61,7 @@ struct ActivityDetailView: View {
         .alert("activity.delete.confirmation.title", isPresented: $showingDeleteConfirmation) {
             Button("common.cancel", role: .cancel) { }
             Button("common.delete", role: .destructive) {
+                HapticManager.notification(.warning)
                 deleteActivity()
             }
         } message: {
@@ -291,7 +292,7 @@ struct SessionRowView: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(session.displayDate)
+                Text(session.displayDate ?? "Unknown Date")
                     .font(DesignSystem.Typography.subheadline)
                     .foregroundColor(.primary)
                 
@@ -364,8 +365,7 @@ class ActivityDetailViewModel: ObservableObject {
             loadRecentSessions()
             
             // Haptic feedback
-            let impactFeedback = UIImpactFeedbackGenerator(style: .medium)
-            impactFeedback.impactOccurred()
+            HapticManager.impact(.medium)
 
         } catch {
             AppLogger.error("Error saving session: \(error)")
@@ -395,7 +395,7 @@ class ActivityDetailViewModel: ObservableObject {
     private func loadRecentSessions() {
         guard let activity = activity,
               let context = viewContext else { return }
-        
+
         let request = ActivitySession.sessionsForActivityFetchRequest(activity)
         request.fetchLimit = 10
         
@@ -405,6 +405,26 @@ class ActivityDetailViewModel: ObservableObject {
             AppLogger.error("Error loading recent sessions: \(error)")
             errorMessage = error.localizedDescription
             recentSessions = []
+        }
+    }
+
+    func delete(session: ActivitySession) {
+        guard let context = viewContext, let activity = self.activity else { return }
+
+        context.delete(session)
+
+        // Recalculate streaks after deletion
+        let streaks = Activity.calculateStreaks(for: activity)
+        activity.currentStreak = Int32(streaks.current)
+        activity.longestStreak = Int32(streaks.longest)
+
+        do {
+            try context.save()
+            // The existing NotificationCenter publisher will trigger UI updates.
+        } catch {
+            // Handle the error appropriately
+            self.errorMessage = error.localizedDescription
+            AppLogger.error("Error deleting session: \(error)")
         }
     }
     

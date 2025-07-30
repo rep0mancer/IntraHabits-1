@@ -1,26 +1,43 @@
 import SwiftUI
 import CoreData
+import BackgroundTasks
 
 @main
 struct IntraHabitsApp: App {
     @StateObject private var persistenceController = PersistenceController.shared
+    @StateObject private var errorHandler = AppDependencies.shared.errorHandler
     @State private var persistenceError: Error?
+    @Environment(\.scenePhase) private var scenePhase
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .withNavigationCoordinator()
                 .preferredColorScheme(.dark)
                 .onAppear {
                     setupAppearance()
                     persistenceError = persistenceController.loadError
+                    registerBackgroundTask()
+                }
+                .environmentObject(errorHandler)
+                .alert(isPresented: $errorHandler.showingAlert) {
+                    Alert(
+                        title: Text("Error"),
+                        message: Text(errorHandler.currentError?.localizedDescription ?? "Unknown error"),
+                        dismissButton: .default(Text("OK"))
+                    )
                 }
                 .alert("Persistence Error", isPresented: Binding(get: { persistenceError != nil }, set: { _ in persistenceError = nil })) {
                     Button("OK", role: .cancel) {}
                 } message: {
                     Text(persistenceError?.localizedDescription ?? "Unknown error")
                 }
+        }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .background {
+                scheduleAppRefresh()
+            }
         }
     }
     
@@ -53,6 +70,41 @@ struct IntraHabitsApp: App {
         // Configure other UI elements
         UITableView.appearance().backgroundColor = UIColor(DesignSystem.Colors.background)
         UITableViewCell.appearance().backgroundColor = UIColor.clear
+    }
+
+    func registerBackgroundTask() {
+        BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.intrahabits.app.sync", using: nil) { task in
+            guard let refreshTask = task as? BGAppRefreshTask else { return }
+            self.handleAppRefresh(task: refreshTask)
+        }
+    }
+
+    func scheduleAppRefresh() {
+        let request = BGAppRefreshTaskRequest(identifier: "com.intrahabits.app.sync")
+        request.earliestBeginDate = Date(timeIntervalSinceNow: 15 * 60)
+
+        do {
+            try BGTaskScheduler.shared.submit(request)
+        } catch {
+            print("Could not schedule app refresh: \(error)")
+        }
+    }
+
+    func handleAppRefresh(task: BGAppRefreshTask) {
+        scheduleAppRefresh()
+
+        let operation = BlockOperation {
+            Task {
+                await AppDependencies.shared.cloudService.startSync()
+                task.setTaskCompleted(success: true)
+            }
+        }
+
+        task.expirationHandler = {
+            operation.cancel()
+        }
+
+        operation.start()
     }
 }
 
