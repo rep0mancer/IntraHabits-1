@@ -160,7 +160,7 @@ extension ActivitySession {
     static func sessionsForDateFetchRequest(_ date: Date) -> NSFetchRequest<ActivitySession> {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return NSFetchRequest<ActivitySession>() }
         
         let request: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
         request.predicate = NSPredicate(format: "sessionDate >= %@ AND sessionDate < %@", 
@@ -172,7 +172,7 @@ extension ActivitySession {
     static func sessionsForActivityAndDateFetchRequest(_ activity: Activity, date: Date) -> NSFetchRequest<ActivitySession> {
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return NSFetchRequest<ActivitySession>() }
         
         let request: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
         request.predicate = NSPredicate(format: "activity == %@ AND sessionDate >= %@ AND sessionDate < %@", 

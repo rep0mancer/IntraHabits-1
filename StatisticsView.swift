@@ -583,7 +583,7 @@ class StatisticsViewModel: ObservableObject {
         var currentDate = dateRange.start
         while currentDate <= dateRange.end {
             let dayStart = calendar.startOfDay(for: currentDate)
-            let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart)!
+            guard let dayEnd = calendar.date(byAdding: .day, value: 1, to: dayStart) else { break }
             
             let daySessions = sessions.filter { session in
                 guard let sessionDate = session.sessionDate else { return false }

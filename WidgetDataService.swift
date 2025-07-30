@@ -170,7 +170,10 @@ class WidgetDataService: ObservableObject {
                     
                     let calendar = Calendar.current
                     let startOfDay = calendar.startOfDay(for: Date())
-                    let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+                    guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+                        continuation.resume(returning: [])
+                        return
+                    }
                     
                     let request: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
                     request.predicate = NSPredicate(format: "activity.id == %@ AND sessionDate >= %@ AND sessionDate < %@", 
@@ -203,7 +206,10 @@ class WidgetDataService: ObservableObject {
                 do {
                     let calendar = Calendar.current
                     let startOfDay = calendar.startOfDay(for: Date())
-                    let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+                    guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else {
+                        continuation.resume(returning: [])
+                        return
+                    }
                     
                     // Get all active activities
                     let activityRequest: NSFetchRequest<Activity> = Activity.fetchRequest()

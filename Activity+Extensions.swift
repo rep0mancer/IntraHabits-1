@@ -30,19 +30,21 @@ extension Activity {
     var isNumericType: Bool {
         return activityType == .numeric
     }
-    
+
+    private func sessions(for dateRange: ClosedRange<Date>) -> [ActivitySession] {
+        guard let allSessions = sessions?.allObjects as? [ActivitySession] else { return [] }
+        return allSessions.filter { session in
+            guard let sessionDate = session.sessionDate else { return false }
+            return dateRange.contains(sessionDate)
+        }
+    }
+
     // MARK: - Session Statistics
     func todaysSessions() -> [ActivitySession] {
-        guard let sessions = sessions?.allObjects as? [ActivitySession] else { return [] }
-        
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: Date())
-        let tomorrow = calendar.date(byAdding: .day, value: 1, to: today)!
-        
-        return sessions.filter { session in
-            guard let sessionDate = session.sessionDate else { return false }
-            return sessionDate >= today && sessionDate < tomorrow
-        }
+        guard let tomorrow = calendar.date(byAdding: .day, value: 1, to: today) else { return [] }
+        return sessions(for: today...tomorrow)
     }
     
     func todaysTotal() -> Double {
@@ -66,15 +68,10 @@ extension Activity {
     }
     
     func weeklyTotal() -> Double {
-        guard let sessions = sessions?.allObjects as? [ActivitySession] else { return 0 }
-        
         let calendar = Calendar.current
-        let weekAgo = calendar.date(byAdding: .day, value: -7, to: Date())!
-        
-        let weeklySessions = sessions.filter { session in
-            guard let sessionDate = session.sessionDate else { return false }
-            return sessionDate >= weekAgo
-        }
+        guard let weekAgo = calendar.date(byAdding: .day, value: -7, to: Date()) else { return 0 }
+        let range = weekAgo...Date()
+        let weeklySessions = sessions(for: range)
         
         if isTimerType {
             return weeklySessions.reduce(0) { $0 + $1.duration }
@@ -84,15 +81,10 @@ extension Activity {
     }
     
     func monthlyTotal() -> Double {
-        guard let sessions = sessions?.allObjects as? [ActivitySession] else { return 0 }
-        
         let calendar = Calendar.current
-        let monthAgo = calendar.date(byAdding: .month, value: -1, to: Date())!
-        
-        let monthlySessions = sessions.filter { session in
-            guard let sessionDate = session.sessionDate else { return false }
-            return sessionDate >= monthAgo
-        }
+        guard let monthAgo = calendar.date(byAdding: .month, value: -1, to: Date()) else { return 0 }
+        let range = monthAgo...Date()
+        let monthlySessions = sessions(for: range)
         
         if isTimerType {
             return monthlySessions.reduce(0) { $0 + $1.duration }
@@ -106,7 +98,7 @@ extension Activity {
         
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return 0 }
         
         let daySessions = sessions.filter { session in
             guard let sessionDate = session.sessionDate else { return false }
@@ -141,7 +133,9 @@ extension Activity {
         for date in uniqueDates {
             if calendar.isDate(date, inSameDayAs: currentDate) {
                 streak += 1
-                currentDate = calendar.date(byAdding: .day, value: -1, to: currentDate)!
+                if let newDate = calendar.date(byAdding: .day, value: -1, to: currentDate) {
+                    currentDate = newDate
+                }
             } else if date < currentDate {
                 break
             }

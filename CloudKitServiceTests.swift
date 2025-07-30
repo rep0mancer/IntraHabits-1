@@ -4,18 +4,19 @@ import CloudKit
 @testable import IntraHabits
 
 final class CloudKitServiceTests: XCTestCase {
-    var service: CloudKitService!
-    var persistence: PersistenceController!
-    var context: NSManagedObjectContext!
+    var service: CloudKitService?
+    var persistence: PersistenceController?
+    var context: NSManagedObjectContext?
 
     override func setUpWithError() throws {
         service = CloudKitService()
-        persistence = PersistenceController(inMemory: true)
-        context = persistence.container.viewContext
+        let persist = PersistenceController(inMemory: true)
+        persistence = persist
+        context = persist.container.viewContext
     }
 
     override func tearDownWithError() throws {
-        service.disableAutomaticSync()
+        service?.disableAutomaticSync()
         service = nil
         context = nil
         persistence = nil
@@ -35,6 +36,7 @@ final class CloudKitServiceTests: XCTestCase {
     }
 
     func testMarkObjectsForUploadOnNotification() {
+        guard let context = context else { return }
         let activity = Activity(context: context)
         activity.id = UUID()
         activity.name = "Test"

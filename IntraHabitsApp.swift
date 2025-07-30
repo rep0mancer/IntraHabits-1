@@ -74,7 +74,8 @@ struct IntraHabitsApp: App {
 
     func registerBackgroundTask() {
         BGTaskScheduler.shared.register(forTaskWithIdentifier: "com.intrahabits.app.sync", using: nil) { task in
-            self.handleAppRefresh(task: task as! BGAppRefreshTask)
+            guard let refreshTask = task as? BGAppRefreshTask else { return }
+            self.handleAppRefresh(task: refreshTask)
         }
     }
 

@@ -3,15 +3,16 @@ import CoreData
 @testable import IntraHabits
 
 final class WidgetDataServiceTests: XCTestCase {
-    var service: WidgetDataService!
-    var persistence: PersistenceController!
-    var context: NSManagedObjectContext!
+    var service: WidgetDataService?
+    var persistence: PersistenceController?
+    var context: NSManagedObjectContext?
 
     override func setUpWithError() throws {
-        persistence = PersistenceController(inMemory: true)
+        let persist = PersistenceController(inMemory: true)
+        persistence = persist
         service = WidgetDataService.shared
-        service.persistentContainer = persistence.container
-        context = persistence.container.viewContext
+        service?.persistentContainer = persist.container
+        context = persist.container.viewContext
     }
 
     override func tearDownWithError() throws {
@@ -21,6 +22,7 @@ final class WidgetDataServiceTests: XCTestCase {
     }
 
     private func createActivity(name: String, type: ActivityType, color: String, active: Bool = true) -> Activity {
+        guard let context = context else { fatalError("Missing context") }
         let activity = Activity(context: context)
         activity.id = UUID()
         activity.name = name
@@ -32,6 +34,7 @@ final class WidgetDataServiceTests: XCTestCase {
     }
 
     func testGetAllActivitiesReturnsActiveOnly() async throws {
+        guard let service = service, let context = context else { return }
         let active = createActivity(name: "Active", type: .numeric, color: "#CD3A2E")
         let inactive = createActivity(name: "Inactive", type: .numeric, color: "#CD3A2E", active: false)
         try context.save()
@@ -43,24 +46,35 @@ final class WidgetDataServiceTests: XCTestCase {
     }
 
     func testCreateSessionAndFetchTodaysSessions() async throws {
+        guard let service = service, let context = context else { return }
         let activity = createActivity(name: "Test", type: .numeric, color: "#CD3A2E")
         try context.save()
 
-        try await service.createSession(activityId: activity.id!.uuidString, numericValue: 3, duration: nil)
-        let sessions = try await service.getTodaysSessions(for: activity.id!.uuidString)
+        if let id = activity.id?.uuidString {
+            try await service.createSession(activityId: id, numericValue: 3, duration: nil)
+            let sessions = try await service.getTodaysSessions(for: id)
 
-        XCTAssertEqual(sessions.count, 1)
-        XCTAssertEqual(sessions.first?.numericValue, 3)
+            XCTAssertEqual(sessions.count, 1)
+            XCTAssertEqual(sessions.first?.numericValue, 3)
+        } else {
+            XCTFail("Missing activity ID")
+        }
     }
 
     func testGetTodaysProgressCalculatesTotals() async throws {
+        guard let service = service, let context = context else { return }
         let activity = createActivity(name: "Progress", type: .numeric, color: "#CD3A2E")
         try context.save()
 
-        try await service.createSession(activityId: activity.id!.uuidString, numericValue: 2, duration: nil)
-        try await service.createSession(activityId: activity.id!.uuidString, numericValue: 3, duration: nil)
+        if let id = activity.id?.uuidString {
+            try await service.createSession(activityId: id, numericValue: 2, duration: nil)
+            try await service.createSession(activityId: id, numericValue: 3, duration: nil)
+        } else {
+            XCTFail("Missing activity ID")
+            return
+        }
 
-        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
+        guard let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Date()) else { return }
         let oldSession = ActivitySession(context: context)
         oldSession.id = UUID()
         oldSession.activity = activity

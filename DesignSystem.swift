@@ -86,10 +86,10 @@ struct DesignSystem {
     
     // MARK: - Shadows
     struct Shadow {
-        static let card = Shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
-        static let button = Shadow(color: .black.opacity(0.15), radius: 2, x: 0, y: 1)
-        
-        struct Shadow {
+        static let card = ShadowDefinition(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+        static let button = ShadowDefinition(color: .black.opacity(0.15), radius: 2, x: 0, y: 1)
+
+        struct ShadowDefinition {
             let color: Color
             let radius: CGFloat
             let x: CGFloat
@@ -109,11 +109,16 @@ struct DesignSystem {
 // MARK: - Color Extension
 extension Color {
     init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        let trimmed = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        guard CharacterSet(charactersIn: trimmed).isSubset(of: CharacterSet(charactersIn: "0123456789ABCDEFabcdef")) else {
+            AppLogger.error("Invalid hex string: \(hex)")
+            self = .black
+            return
+        }
         var int: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&int)
+        Scanner(string: trimmed).scanHexInt64(&int)
         let a, r, g, b: UInt64
-        switch hex.count {
+        switch trimmed.count {
         case 3: // RGB (12-bit)
             (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
         case 6: // RGB (24-bit)
@@ -149,12 +154,12 @@ extension Color {
 struct CardStyle: ViewModifier {
     let backgroundColor: Color
     let cornerRadius: CGFloat
-    let shadow: DesignSystem.Shadow.Shadow
+    let shadow: DesignSystem.Shadow.ShadowDefinition
     
     init(
         backgroundColor: Color = DesignSystem.Colors.secondaryBackground,
         cornerRadius: CGFloat = DesignSystem.CornerRadius.medium,
-        shadow: DesignSystem.Shadow.Shadow = DesignSystem.Shadow.card
+        shadow: DesignSystem.Shadow.ShadowDefinition = DesignSystem.Shadow.card
     ) {
         self.backgroundColor = backgroundColor
         self.cornerRadius = cornerRadius
@@ -215,7 +220,7 @@ extension View {
     func cardStyle(
         backgroundColor: Color = DesignSystem.Colors.secondaryBackground,
         cornerRadius: CGFloat = DesignSystem.CornerRadius.medium,
-        shadow: DesignSystem.Shadow.Shadow = DesignSystem.Shadow.card
+        shadow: DesignSystem.Shadow.ShadowDefinition = DesignSystem.Shadow.card
     ) -> some View {
         modifier(CardStyle(backgroundColor: backgroundColor, cornerRadius: cornerRadius, shadow: shadow))
     }
