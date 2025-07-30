@@ -43,7 +43,7 @@ class WidgetDataService: ObservableObject {
             context.perform {
                 do {
                     let request: NSFetchRequest<Activity> = Activity.fetchRequest()
-                    request.predicate = NSPredicate(format: "isActive == true")
+                    request.predicate = NSPredicate(format: "%K == true", #keyPath(Activity.isActive))
                     request.sortDescriptors = [NSSortDescriptor(keyPath: \Activity.createdAt, ascending: true)]
                     
                     let activities = try self.context.fetch(request)
@@ -69,7 +69,7 @@ class WidgetDataService: ObservableObject {
                 do {
                     let uuids = ids.compactMap { UUID(uuidString: $0) }
                     let request: NSFetchRequest<Activity> = Activity.fetchRequest()
-                    request.predicate = NSPredicate(format: "id IN %@ AND isActive == true", uuids)
+                    request.predicate = NSPredicate(format: "id IN %@ AND %K == true", uuids, #keyPath(Activity.isActive))
                     
                     let activities = try self.context.fetch(request)
                     let entities = activities.map { activity in
@@ -98,7 +98,7 @@ class WidgetDataService: ObservableObject {
                     }
                     
                     let request: NSFetchRequest<Activity> = Activity.fetchRequest()
-                    request.predicate = NSPredicate(format: "id == %@ AND isActive == true", uuid as CVarArg)
+                    request.predicate = NSPredicate(format: "id == %@ AND %K == true", uuid as CVarArg, #keyPath(Activity.isActive))
                     request.fetchLimit = 1
                     
                     let activities = try self.context.fetch(request)
@@ -207,7 +207,7 @@ class WidgetDataService: ObservableObject {
                     
                     // Get all active activities
                     let activityRequest: NSFetchRequest<Activity> = Activity.fetchRequest()
-                    activityRequest.predicate = NSPredicate(format: "isActive == true")
+                    activityRequest.predicate = NSPredicate(format: "%K == true", #keyPath(Activity.isActive))
                     activityRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Activity.createdAt, ascending: true)]
                     
                     let activities = try self.context.fetch(activityRequest)
@@ -259,7 +259,7 @@ class WidgetDataService: ObservableObject {
             context.perform {
                 do {
                     let activityRequest: NSFetchRequest<Activity> = Activity.fetchRequest()
-                    activityRequest.predicate = NSPredicate(format: "isActive == true")
+                    activityRequest.predicate = NSPredicate(format: "%K == true", #keyPath(Activity.isActive))
                     activityRequest.sortDescriptors = [NSSortDescriptor(keyPath: \Activity.createdAt, ascending: true)]
                     
                     let activities = try self.context.fetch(activityRequest)

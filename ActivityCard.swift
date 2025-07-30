@@ -113,12 +113,11 @@ struct ActivityCard: View {
     }
     
     private var numericActionButton: some View {
-        Button(action: { 
-            if selectedStepSize == 1 {
-                viewModel.incrementActivity(by: 1)
-            } else {
-                viewModel.incrementActivity(by: selectedStepSize)
-            }
+        Button(action: {
+            let step = selectedStepSize
+            let style: UIImpactFeedbackGenerator.FeedbackStyle = step > 1 ? .heavy : .medium
+            HapticManager.impact(style)
+            viewModel.incrementActivity(by: step)
         }) {
             HStack(spacing: 4) {
                 Image(systemName: "plus")
@@ -135,7 +134,6 @@ struct ActivityCard: View {
             .background(activity.displayColor)
             .cornerRadius(DesignSystem.CornerRadius.medium)
         }
-        .hapticFeedback(.medium)
         .onLongPressGesture {
             showingStepSelector = true
         }
@@ -149,6 +147,8 @@ struct ActivityCard: View {
             buttons: stepSizes.map { stepSize in
                 .default(Text("+\(stepSize)")) {
                     selectedStepSize = stepSize
+                    let style: UIImpactFeedbackGenerator.FeedbackStyle = stepSize > 1 ? .heavy : .medium
+                    HapticManager.impact(style)
                     viewModel.incrementActivity(by: stepSize)
                 }
             } + [.cancel()]
@@ -198,10 +198,6 @@ class ActivityCardViewModel: ObservableObject {
         do {
             try context.save()
             updateDisplayValues()
-            
-            // Haptic feedback based on value
-            let impactStyle: UIImpactFeedbackGenerator.FeedbackStyle = value > 1 ? .heavy : .medium
-            HapticManager.impact(impactStyle)
             
         } catch {
             AppLogger.error("Error saving session: \(error)")

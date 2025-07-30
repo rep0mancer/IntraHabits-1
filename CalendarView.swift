@@ -12,7 +12,7 @@ struct CalendarView: View {
     
     @FetchRequest(
         sortDescriptors: [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)],
-        predicate: NSPredicate(format: "isActive == %@", NSNumber(value: true)),
+        predicate: NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true)),
         animation: .default
     )
     private var activities: FetchedResults<Activity>

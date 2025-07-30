@@ -614,7 +614,7 @@ class StatisticsViewModel: ObservableObject {
         guard let context = viewContext else { return }
         
         let activityRequest: NSFetchRequest<Activity> = Activity.fetchRequest()
-        activityRequest.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
+        activityRequest.predicate = NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true))
         
         do {
             let activities = try context.fetch(activityRequest)
