@@ -395,7 +395,7 @@ class ActivityDetailViewModel: ObservableObject {
     private func loadRecentSessions() {
         guard let activity = activity,
               let context = viewContext else { return }
-        
+
         let request = ActivitySession.sessionsForActivityFetchRequest(activity)
         request.fetchLimit = 10
         
@@ -405,6 +405,26 @@ class ActivityDetailViewModel: ObservableObject {
             AppLogger.error("Error loading recent sessions: \(error)")
             errorMessage = error.localizedDescription
             recentSessions = []
+        }
+    }
+
+    func delete(session: ActivitySession) {
+        guard let context = viewContext, let activity = self.activity else { return }
+
+        context.delete(session)
+
+        // Recalculate streaks after deletion
+        let streaks = Activity.calculateStreaks(for: activity)
+        activity.currentStreak = Int32(streaks.current)
+        activity.longestStreak = Int32(streaks.longest)
+
+        do {
+            try context.save()
+            // The existing NotificationCenter publisher will trigger UI updates.
+        } catch {
+            // Handle the error appropriately
+            self.errorMessage = error.localizedDescription
+            AppLogger.error("Error deleting session: \(error)")
         }
     }
     
