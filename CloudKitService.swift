@@ -68,10 +68,11 @@ class CloudKitService: ObservableObject {
     // MARK: - Sync Operations
     
     private func performFullSync() async {
-        let isAvailable = await isCloudKitAvailable()
-        guard isAvailable else {
+        // First, check account status and update UI on the main thread
+        guard await isCloudKitAvailable() else {
             await MainActor.run {
                 syncError = CloudKitError.accountNotAvailable
+                syncStatus = .failed
             }
             return
         }
@@ -80,28 +81,34 @@ class CloudKitService: ObservableObject {
             syncStatus = .syncing
             syncError = nil
         }
-        
+
+        // Perform all heavy lifting in a background task
         do {
-            // Upload local changes first
-            try await uploadLocalChanges()
+            try await Task.detached(priority: .background) {
+                let context = PersistenceController.shared.container.newBackgroundContext()
+                // Upload local changes
+                try await self.uploadActivities(context: context)
+                try await self.uploadSessions(context: context)
 
-            // Then download remote changes
-            try await downloadRemoteChanges()
+                // Download remote changes
+                try await self.downloadActivities()
+                try await self.downloadSessions()
+            }.value
 
+            // After the background work is done, update UI on the main thread
             let syncDate = Date()
             await MainActor.run {
                 lastSyncDate = syncDate
                 syncStatus = .completed
             }
             UserDefaults.standard.set(syncDate, forKey: "lastCloudKitSync")
-            
+
         } catch {
+            // Handle errors by updating UI on the main thread
             await MainActor.run {
-                syncError = error
-                syncStatus = .failed
-            }
-            AppLogger.error("Sync failed: \(error)")
-            DispatchQueue.main.async {
+                self.syncError = error
+                self.syncStatus = .failed
+                AppLogger.error("Sync failed: \(error)")
                 AppDependencies.shared.errorHandler.handle(error)
             }
         }

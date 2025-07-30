@@ -56,6 +56,7 @@ struct ContentView: View {
                 Text("home.title")
                     .font(DesignSystem.Typography.largeTitle)
                     .foregroundColor(.primary)
+                    .dynamicTypeSize()
                 
                 if !activities.isEmpty {
                     Text("home.subtitle")
