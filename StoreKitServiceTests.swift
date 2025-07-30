@@ -6,7 +6,7 @@ final class StoreKitServiceTests: XCTestCase {
     var storeKitService: StoreKitService!
     
     override func setUpWithError() throws {
-        storeKitService = StoreKitService.shared
+        storeKitService = StoreKitService()
     }
     
     override func tearDownWithError() throws {
@@ -138,6 +138,19 @@ final class StoreKitServiceTests: XCTestCase {
         }
         
         await fulfillment(of: [expectation], timeout: 5.0)
+    }
+
+    func testPurchaseWithTestSession() async throws {
+        let session = try SKTestSession(configurationFileNamed: "Products.storekit")
+        session.disableDialogs = true
+        session.clearTransactions()
+
+        await storeKitService.loadProducts()
+        guard let product = storeKitService.unlimitedActivitiesProduct else {
+            XCTFail("Product not available")
+            return
+        }
+        _ = await storeKitService.purchase(product)
     }
     
     // MARK: - Error Handling Tests

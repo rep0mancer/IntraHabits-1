@@ -4,7 +4,6 @@ import Combine
 
 @MainActor
 class StoreKitService: ObservableObject {
-    static let shared = StoreKitService()
     
     // Product IDs
     private let unlimitedActivitiesProductID = "com.intrahabits.unlimited_activities"
@@ -17,8 +16,8 @@ class StoreKitService: ObservableObject {
     
     // Transaction listener
     private var transactionListener: Task<Void, Error>?
-    
-    private init() {
+
+    init() {
         // Start listening for transactions
         transactionListener = listenForTransactions()
         
@@ -228,7 +227,7 @@ class PurchaseManager: ObservableObject {
     @Published var showingPurchaseError = false
     @Published var errorMessage: String?
     
-    private let storeKitService = StoreKitService.shared
+    private let storeKitService = AppDependencies.shared.storeService
     
     func purchaseUnlimitedActivities() async {
         guard let product = storeKitService.unlimitedActivitiesProduct else {

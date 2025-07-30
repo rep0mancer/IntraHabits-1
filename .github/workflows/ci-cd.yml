@@ -1,0 +1,396 @@
+name: IntraHabits CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [ published ]
+
+env:
+  XCODE_VERSION: '15.1'
+  IOS_SIMULATOR: 'iPhone 15 Pro'
+  IOS_VERSION: '17.2'
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: macos-14
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Install SwiftLint
+      run: brew install swiftlint
+    - name: Lint Swift
+      run: swiftlint lint --strict
+    - name: Install SwiftFormat
+      run: brew install swiftformat
+    - name: Format Swift
+      run: swiftformat --lint .
+
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
+      
+    - name: Show Xcode version
+      run: xcodebuild -version
+      
+    - name: Cache derived data
+      uses: actions/cache@v3
+      with:
+        path: ~/Library/Developer/Xcode/DerivedData
+        key: ${{ runner.os }}-derived-data-${{ hashFiles('**/*.xcodeproj') }}
+        restore-keys: |
+          ${{ runner.os }}-derived-data-
+          
+    - name: Install dependencies
+      run: |
+        # Install any required dependencies here
+        echo "No additional dependencies required"
+        
+    - name: Run unit tests
+      run: |
+        xcodebuild test \
+          -project IntraHabits.xcodeproj \
+          -scheme IntraHabits \
+          -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
+          -enableCodeCoverage YES \
+          -derivedDataPath DerivedData \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Generate code coverage report
+      run: |
+        xcrun xccov view --report --json DerivedData/Logs/Test/*.xcresult > coverage.json
+        
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.json
+        flags: unittests
+        name: codecov-umbrella
+        
+    - name: Archive test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: test-results
+        path: |
+          DerivedData/Logs/Test/*.xcresult
+          coverage.json
+
+  build:
+    name: Build App
+    runs-on: macos-14
+    needs: test
+    if: github.event_name == 'push' || github.event_name == 'release'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
+      
+    - name: Cache derived data
+      uses: actions/cache@v3
+      with:
+        path: ~/Library/Developer/Xcode/DerivedData
+        key: ${{ runner.os }}-derived-data-${{ hashFiles('**/*.xcodeproj') }}
+        restore-keys: |
+          ${{ runner.os }}-derived-data-
+          
+    - name: Import certificates
+      env:
+        ENTERPRISE_CERTIFICATE_P12: ${{ secrets.ENTERPRISE_CERTIFICATE_P12 }}
+        ENTERPRISE_CERTIFICATE_PASSWORD: ${{ secrets.ENTERPRISE_CERTIFICATE_PASSWORD }}
+        KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      run: |
+        # Create keychain
+        security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+        security default-keychain -s build.keychain
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+        security set-keychain-settings -t 3600 -u build.keychain
+        
+        # Import certificate
+        echo "$ENTERPRISE_CERTIFICATE_P12" | base64 --decode > certificate.p12
+        security import certificate.p12 -k build.keychain -P "$ENTERPRISE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+        
+        # Clean up
+        rm certificate.p12
+        
+    - name: Import provisioning profile
+      env:
+        ENTERPRISE_PROVISIONING_PROFILE: ${{ secrets.ENTERPRISE_PROVISIONING_PROFILE }}
+      run: |
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        echo "$ENTERPRISE_PROVISIONING_PROFILE" | base64 --decode > ~/Library/MobileDevice/Provisioning\ Profiles/IntraHabits_Enterprise.mobileprovision
+        
+    - name: Build for testing
+      run: |
+        xcodebuild build-for-testing \
+          -project IntraHabits.xcodeproj \
+          -scheme IntraHabits \
+          -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
+          -derivedDataPath DerivedData
+          
+    - name: Build archive
+      run: |
+        xcodebuild archive \
+          -project IntraHabits.xcodeproj \
+          -scheme IntraHabits \
+          -destination "generic/platform=iOS" \
+          -archivePath IntraHabits.xcarchive \
+          -derivedDataPath DerivedData \
+          CODE_SIGN_STYLE=Manual \
+          PROVISIONING_PROFILE_SPECIFIER="IntraHabits Enterprise" \
+          CODE_SIGN_IDENTITY="iPhone Distribution: Your Company Name"
+          
+    - name: Export IPA
+      run: |
+        cat > ExportOptions.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>method</key>
+            <string>enterprise</string>
+            <key>teamID</key>
+            <string>${{ secrets.TEAM_ID }}</string>
+            <key>compileBitcode</key>
+            <false/>
+            <key>stripSwiftSymbols</key>
+            <true/>
+            <key>thinning</key>
+            <string>&lt;none&gt;</string>
+        </dict>
+        </plist>
+        EOF
+        
+        xcodebuild -exportArchive \
+          -archivePath IntraHabits.xcarchive \
+          -exportPath Export \
+          -exportOptionsPlist ExportOptions.plist
+          
+    - name: Upload IPA artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: IntraHabits-${{ github.sha }}
+        path: Export/IntraHabits.ipa
+        
+    - name: Upload dSYM artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: IntraHabits-dSYM-${{ github.sha }}
+        path: IntraHabits.xcarchive/dSYMs/
+        
+    - name: Clean up keychain
+      if: always()
+      run: |
+        security delete-keychain build.keychain || true
+
+  deploy:
+    name: Deploy to Enterprise
+    runs-on: macos-14
+    needs: build
+    if: github.event_name == 'release'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download IPA artifact
+      uses: actions/download-artifact@v3
+      with:
+        name: IntraHabits-${{ github.sha }}
+        path: ./
+        
+    - name: Upload to enterprise distribution
+      env:
+        ENTERPRISE_DISTRIBUTION_URL: ${{ secrets.ENTERPRISE_DISTRIBUTION_URL }}
+        ENTERPRISE_API_KEY: ${{ secrets.ENTERPRISE_API_KEY }}
+      run: |
+        # Upload IPA to enterprise distribution platform
+        curl -X POST \
+          -H "Authorization: Bearer $ENTERPRISE_API_KEY" \
+          -F "file=@IntraHabits.ipa" \
+          -F "version=${{ github.event.release.tag_name }}" \
+          -F "release_notes=${{ github.event.release.body }}" \
+          "$ENTERPRISE_DISTRIBUTION_URL/upload"
+          
+    - name: Create deployment manifest
+      run: |
+        cat > manifest.plist << EOF
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+        <dict>
+            <key>items</key>
+            <array>
+                <dict>
+                    <key>assets</key>
+                    <array>
+                        <dict>
+                            <key>kind</key>
+                            <string>software-package</string>
+                            <key>url</key>
+                            <string>${{ secrets.ENTERPRISE_DISTRIBUTION_URL }}/IntraHabits-${{ github.event.release.tag_name }}.ipa</string>
+                        </dict>
+                    </array>
+                    <key>metadata</key>
+                    <dict>
+                        <key>bundle-identifier</key>
+                        <string>com.intrahabits.app</string>
+                        <key>bundle-version</key>
+                        <string>${{ github.event.release.tag_name }}</string>
+                        <key>kind</key>
+                        <string>software</string>
+                        <key>title</key>
+                        <string>IntraHabits</string>
+                    </dict>
+                </dict>
+            </array>
+        </dict>
+        </plist>
+        EOF
+        
+    - name: Upload manifest
+      env:
+        ENTERPRISE_DISTRIBUTION_URL: ${{ secrets.ENTERPRISE_DISTRIBUTION_URL }}
+        ENTERPRISE_API_KEY: ${{ secrets.ENTERPRISE_API_KEY }}
+      run: |
+        curl -X POST \
+          -H "Authorization: Bearer $ENTERPRISE_API_KEY" \
+          -F "file=@manifest.plist" \
+          "$ENTERPRISE_DISTRIBUTION_URL/manifest"
+
+  security-scan:
+    name: Security Scan
+    runs-on: macos-14
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run security scan
+      run: |
+        # Check for hardcoded secrets
+        echo "Scanning for hardcoded secrets..."
+        if grep -r "sk_" . --exclude-dir=.git; then
+          echo "❌ Found potential API keys"
+          exit 1
+        fi
+        
+        # Check for TODO/FIXME comments
+        echo "Checking for TODO/FIXME comments..."
+        if grep -r "TODO\|FIXME" . --exclude-dir=.git --include="*.swift"; then
+          echo "⚠️ Found TODO/FIXME comments"
+        fi
+        
+        # Check Info.plist security settings
+        echo "Checking Info.plist security settings..."
+        if ! grep -q "NSAppTransportSecurity" IntraHabits/Info.plist; then
+          echo "⚠️ App Transport Security not configured"
+        fi
+        
+        echo "✅ Security scan completed"
+
+  performance-test:
+    name: Performance Tests
+    runs-on: macos-14
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
+      
+    - name: Run performance tests
+      run: |
+        xcodebuild test \
+          -project IntraHabits.xcodeproj \
+          -scheme IntraHabits \
+          -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
+          -testPlan PerformanceTests \
+          -derivedDataPath DerivedData \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Archive performance results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: performance-results
+        path: DerivedData/Logs/Test/*.xcresult
+
+  accessibility-test:
+    name: Accessibility Tests
+    runs-on: macos-14
+    needs: test
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer
+      
+    - name: Run accessibility tests
+      run: |
+        xcodebuild test \
+          -project IntraHabits.xcodeproj \
+          -scheme IntraHabits \
+          -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
+          -testPlan AccessibilityTests \
+          -derivedDataPath DerivedData \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
+          
+    - name: Archive accessibility results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: accessibility-results
+        path: DerivedData/Logs/Test/*.xcresult
+
+  notify:
+    name: Notify Team
+    runs-on: ubuntu-latest
+    needs: [test, build, security-scan, performance-test, accessibility-test]
+    if: always()
+    
+    steps:
+    - name: Notify Slack
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      run: |
+        if [ "${{ needs.test.result }}" == "success" ] && [ "${{ needs.build.result }}" == "success" ]; then
+          STATUS="✅ Success"
+          COLOR="good"
+        else
+          STATUS="❌ Failed"
+          COLOR="danger"
+        fi
+        
+        curl -X POST -H 'Content-type: application/json' \
+          --data "{
+            \"attachments\": [{
+              \"color\": \"$COLOR\",
+              \"title\": \"IntraHabits CI/CD Pipeline\",
+              \"text\": \"$STATUS - Build ${{ github.run_number }}\",
+              \"fields\": [
+                {\"title\": \"Branch\", \"value\": \"${{ github.ref_name }}\", \"short\": true},
+                {\"title\": \"Commit\", \"value\": \"${{ github.sha }}\", \"short\": true},
+                {\"title\": \"Tests\", \"value\": \"${{ needs.test.result }}\", \"short\": true},
+                {\"title\": \"Build\", \"value\": \"${{ needs.build.result }}\", \"short\": true}
+              ]
+            }]
+          }" \
+          $SLACK_WEBHOOK_URL
+

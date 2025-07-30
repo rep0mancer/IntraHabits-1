@@ -9,7 +9,7 @@ final class CloudKitServiceTests: XCTestCase {
     var context: NSManagedObjectContext!
 
     override func setUpWithError() throws {
-        service = CloudKitService.shared
+        service = CloudKitService()
         persistence = PersistenceController(inMemory: true)
         context = persistence.container.viewContext
     }
@@ -56,6 +56,12 @@ final class CloudKitServiceTests: XCTestCase {
 
         XCTAssertTrue(activity.needsCloudKitUpload)
         XCTAssertNotNil(activity.lastModifiedAt)
+    }
+
+    func testCheckAccountStatusUpdatesFlag() async throws {
+        let testService = CloudKitService(container: CKContainer(identifier: "iCloud.com.intrahabits.test"))
+        await testService.checkAccountStatus()
+        XCTAssertFalse(testService.isSignedIn)
     }
 }
 
