@@ -6,8 +6,8 @@ import SwiftUI
 extension ActivitySession {
     
     // MARK: - Computed Properties
-    var displayDate: String {
-        guard let sessionDate = sessionDate else { return "Unknown Date" }
+    var displayDate: String? {
+        guard let sessionDate = sessionDate else { return nil }
         
         let formatter = DateFormatter()
         formatter.dateStyle = .medium

@@ -114,63 +114,11 @@ extension Activity {
     
     // MARK: - Streak Calculation
     func currentStreak() -> Int {
-        guard let sessions = sessions?.allObjects as? [ActivitySession] else { return 0 }
-        
-        let calendar = Calendar.current
-        let sortedSessions = sessions
-            .compactMap { $0.sessionDate }
-            .map { calendar.startOfDay(for: $0) }
-            .sorted(by: >)
-        
-        guard !sortedSessions.isEmpty else { return 0 }
-        
-        let uniqueDates = Array(Set(sortedSessions)).sorted(by: >)
-        let today = calendar.startOfDay(for: Date())
-        
-        var streak = 0
-        var currentDate = today
-        
-        for date in uniqueDates {
-            if calendar.isDate(date, inSameDayAs: currentDate) {
-                streak += 1
-                if let newDate = calendar.date(byAdding: .day, value: -1, to: currentDate) {
-                    currentDate = newDate
-                }
-            } else if date < currentDate {
-                break
-            }
-        }
-        
-        return streak
+        return Int(self.currentStreak)
     }
-    
+
     func longestStreak() -> Int {
-        guard let sessions = sessions?.allObjects as? [ActivitySession] else { return 0 }
-        
-        let calendar = Calendar.current
-        let uniqueDates = Array(Set(sessions
-            .compactMap { $0.sessionDate }
-            .map { calendar.startOfDay(for: $0) }
-        )).sorted()
-        
-        guard !uniqueDates.isEmpty else { return 0 }
-        
-        var maxStreak = 1
-        var currentStreak = 1
-        
-        for i in 1..<uniqueDates.count {
-            let previousDate = uniqueDates[i - 1]
-            let currentDate = uniqueDates[i]
-            
-            if calendar.dateInterval(of: .day, for: previousDate)?.end == currentDate {
-                currentStreak += 1
-                maxStreak = max(maxStreak, currentStreak)
-            } else {
-                currentStreak = 1
-            }
-        }
-        
-        return maxStreak
+        return Int(self.longestStreak)
     }
     
     // MARK: - Helper Methods

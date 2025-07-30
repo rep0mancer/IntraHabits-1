@@ -108,11 +108,7 @@ struct ContentView: View {
             ScrollView {
                 LazyVStack(spacing: DesignSystem.Spacing.md) {
                     ForEach(viewModel.activities, id: \.id) { activity in
-                        ActivityCard(activity: activity, viewModel: {
-                            let vm = ActivityCardViewModel()
-                            vm.setActivity(activity, context: viewContext)
-                            return vm
-                        }())
+                        ActivityCard(activity: activity, viewModel: viewModel.cardViewModels[activity.id!]!)
                             .environment(\.managedObjectContext, viewContext)
                             .onTapGesture {
                                 coordinator.presentActivityDetail(for: activity)
@@ -220,84 +216,6 @@ struct ContentView: View {
         } catch {
             // Handle the error appropriately
             print("Failed to delete activity: \(error.localizedDescription)")
-        }
-    }
-}
-
-// MARK: - Enhanced Activity List View Model
-class ActivityListViewModel: ObservableObject {
-    @Published var activities: [Activity] = []
-    @Published var isLoading = false
-    @Published var errorMessage: String?
-    
-    private var viewContext: NSManagedObjectContext?
-    private var cancellables = Set<AnyCancellable>()
-    
-    func setContext(_ context: NSManagedObjectContext) {
-        self.viewContext = context
-        loadActivities()
-        
-        // Listen for Core Data changes
-        NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
-            .sink { [weak self] _ in
-                DispatchQueue.main.async {
-                    self?.loadActivities()
-                }
-            }
-            .store(in: &cancellables)
-    }
-    
-    func loadActivities() {
-        guard let context = viewContext else { return }
-        
-        isLoading = true
-        errorMessage = nil
-        
-        let request: NSFetchRequest<Activity> = Activity.fetchRequest()
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)]
-        request.predicate = NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true))
-        
-        do {
-            activities = try context.fetch(request)
-            isLoading = false
-        } catch {
-            errorMessage = error.localizedDescription
-            isLoading = false
-        }
-    }
-    
-    func deleteActivity(_ activity: Activity) {
-        guard let context = viewContext else { return }
-        
-        activity.isActive = false
-        activity.updatedAt = Date()
-        
-        do {
-            try context.save()
-
-            // Haptic feedback
-            HapticManager.notification(.success)
-            
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-    
-    func reorderActivities(from source: IndexSet, to destination: Int) {
-        guard let context = viewContext else { return }
-        
-        var reorderedActivities = activities
-        reorderedActivities.move(fromOffsets: source, toOffset: destination)
-        
-        for (index, activity) in reorderedActivities.enumerated() {
-            activity.sortOrder = Int32(index)
-            activity.updatedAt = Date()
-        }
-        
-        do {
-            try context.save()
-        } catch {
-            errorMessage = error.localizedDescription
         }
     }
 }

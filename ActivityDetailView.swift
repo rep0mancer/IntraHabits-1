@@ -292,7 +292,7 @@ struct SessionRowView: View {
     var body: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(session.displayDate)
+                Text(session.displayDate ?? "Unknown Date")
                     .font(DesignSystem.Typography.subheadline)
                     .foregroundColor(.primary)
                 
