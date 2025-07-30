@@ -1,1 +1,10 @@
-opt_in_rules: []
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - fatal_error_message
+  - force_cast
+  - force_try
+  - force_unwrapping
+  - nimble_operator
+  - redundant_nil_coalescing
+  - unneeded_parentheses_in_closure_argument

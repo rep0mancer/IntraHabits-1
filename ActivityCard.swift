@@ -158,63 +158,6 @@ struct ActivityCard: View {
     }
 }
 
-// MARK: - Enhanced Activity Card View Model
-class ActivityCardViewModel: ObservableObject {
-    @Published var todaysFormattedValue: String = "0"
-    @Published var currentStreak: Int = 0
-    @Published var weeklyTotal: Double = 0
-    @Published var monthlyTotal: Double = 0
-    
-    private var activity: Activity?
-    private var viewContext: NSManagedObjectContext?
-    private var cancellables = Set<AnyCancellable>()
-    
-    func setActivity(_ activity: Activity, context: NSManagedObjectContext) {
-        self.activity = activity
-        self.viewContext = context
-        updateDisplayValues()
-        
-        // Listen for changes to update the display
-        NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
-            .sink { [weak self] _ in
-                DispatchQueue.main.async {
-                    self?.updateDisplayValues()
-                }
-            }
-            .store(in: &cancellables)
-    }
-    
-    func incrementActivity(by value: Int = 1) {
-        guard let activity = activity,
-              let context = viewContext,
-              activity.isNumericType else { return }
-        
-        let session = ActivitySession(context: context)
-        session.id = UUID()
-        session.activity = activity
-        session.sessionDate = Date()
-        session.numericValue = Double(value)
-        session.createdAt = Date()
-        session.isCompleted = true
-        
-        do {
-            try context.save()
-            updateDisplayValues()
-            
-        } catch {
-            AppLogger.error("Error saving session: \(error)")
-        }
-    }
-    
-    private func updateDisplayValues() {
-        guard let activity = activity else { return }
-        
-        todaysFormattedValue = activity.todaysFormattedTotal()
-        currentStreak = activity.currentStreak()
-        weeklyTotal = activity.weeklyTotal()
-        monthlyTotal = activity.monthlyTotal()
-    }
-}
 
 // MARK: - Preview
 struct ActivityCard_Previews: PreviewProvider {

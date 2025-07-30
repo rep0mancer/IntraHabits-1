@@ -274,28 +274,11 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       
+    - name: Install SwiftLint
+      run: brew install swiftlint
+
     - name: Run security scan
-      run: |
-        # Check for hardcoded secrets
-        echo "Scanning for hardcoded secrets..."
-        if grep -r "sk_" . --exclude-dir=.git; then
-          echo "❌ Found potential API keys"
-          exit 1
-        fi
-        
-        # Check for TODO/FIXME comments
-        echo "Checking for TODO/FIXME comments..."
-        if grep -r "TODO\|FIXME" . --exclude-dir=.git --include="*.swift"; then
-          echo "⚠️ Found TODO/FIXME comments"
-        fi
-        
-        # Check Info.plist security settings
-        echo "Checking Info.plist security settings..."
-        if ! grep -q "NSAppTransportSecurity" IntraHabits/Info.plist; then
-          echo "⚠️ App Transport Security not configured"
-        fi
-        
-        echo "✅ Security scan completed"
+      run: swiftlint lint --config .swiftlint.yml --strict
 
   performance-test:
     name: Performance Tests
