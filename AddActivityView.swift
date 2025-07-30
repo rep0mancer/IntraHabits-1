@@ -158,6 +158,7 @@ struct AddActivityView: View {
                 Task {
                     let success = await viewModel.createActivity()
                     if success {
+                        HapticManager.notification(.success)
                         dismiss()
                     } else if viewModel.shouldShowPaywall {
                         coordinator.presentPaywall()
@@ -240,14 +241,28 @@ class AddActivityViewModel: ObservableObject {
     @MainActor
     func createActivity() async -> Bool {
         guard let context = viewContext, isFormValid else { return false }
-        
+
         isLoading = true
         errorMessage = nil
         shouldShowPaywall = false
+
+        // Create a temporary activity object for validation
+        let tempActivity = Activity(context: context)
+        tempActivity.name = activityName.trimmingCharacters(in: .whitespacesAndNewlines)
+        tempActivity.color = selectedColor
+        tempActivity.type = selectedType.rawValue
+
+        let validation = tempActivity.validate()
+        if !validation.isValid {
+            self.errorMessage = validation.errors.first
+            self.isLoading = false
+            context.rollback()
+            return false
+        }
         
         // Check activity limit for paywall
         let request: NSFetchRequest<Activity> = Activity.fetchRequest()
-        request.predicate = NSPredicate(format: "isActive == %@", NSNumber(value: true))
+        request.predicate = NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true))
         
         do {
             let existingActivities = try context.fetch(request)
@@ -273,8 +288,6 @@ class AddActivityViewModel: ObservableObject {
             
             try context.save()
             
-            // Haptic feedback
-            HapticManager.notification(.success)
             
             isLoading = false
             return true

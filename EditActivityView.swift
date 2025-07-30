@@ -161,10 +161,12 @@ struct EditActivityView: View {
             Divider()
                 .background(DesignSystem.Colors.systemGray5)
             
-            Button(action: { 
+           Button(action: {
+                HapticManager.impact(.medium)
                 Task {
                     let success = await viewModel.saveChanges()
                     if success {
+                        HapticManager.notification(.success)
                         dismiss()
                     }
                 }
@@ -257,9 +259,23 @@ class EditActivityViewModel: ObservableObject {
               let context = viewContext,
               isFormValid,
               hasChanges else { return false }
-        
+
         isLoading = true
         errorMessage = nil
+
+        // Validate the updated activity
+        let tempActivity = Activity(context: context)
+        tempActivity.name = activityName.trimmingCharacters(in: .whitespacesAndNewlines)
+        tempActivity.color = selectedColor
+        tempActivity.type = selectedType.rawValue
+
+        let validation = tempActivity.validate()
+        if !validation.isValid {
+            self.errorMessage = validation.errors.first
+            self.isLoading = false
+            context.rollback()
+            return false
+        }
         
         do {
             // Update activity properties
@@ -274,8 +290,6 @@ class EditActivityViewModel: ObservableObject {
             
             try context.save()
             
-            // Haptic feedback
-            HapticManager.notification(.success)
             
             isLoading = false
             return true

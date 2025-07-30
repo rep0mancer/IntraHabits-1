@@ -101,7 +101,10 @@ struct ActivityCard: View {
     }
     
     private var timerActionButton: some View {
-        Button(action: { showingTimer = true }) {
+        Button(action: {
+            HapticManager.impact(.medium)
+            showingTimer = true
+        }) {
             Image(systemName: "play.fill")
                 .font(.title3)
                 .foregroundColor(.white)
@@ -109,11 +112,13 @@ struct ActivityCard: View {
                 .background(activity.displayColor)
                 .cornerRadius(DesignSystem.CornerRadius.medium)
         }
-        .hapticFeedback(.medium)
+        
     }
     
     private var numericActionButton: some View {
-        Button(action: { 
+        Button(action: {
+            let impactStyle: UIImpactFeedbackGenerator.FeedbackStyle = selectedStepSize > 1 ? .heavy : .medium
+            HapticManager.impact(impactStyle)
             if selectedStepSize == 1 {
                 viewModel.incrementActivity(by: 1)
             } else {
@@ -135,7 +140,6 @@ struct ActivityCard: View {
             .background(activity.displayColor)
             .cornerRadius(DesignSystem.CornerRadius.medium)
         }
-        .hapticFeedback(.medium)
         .onLongPressGesture {
             showingStepSelector = true
         }
@@ -148,6 +152,8 @@ struct ActivityCard: View {
             message: Text("activity.step.selector.message"),
             buttons: stepSizes.map { stepSize in
                 .default(Text("+\(stepSize)")) {
+                    let style: UIImpactFeedbackGenerator.FeedbackStyle = stepSize > 1 ? .heavy : .medium
+                    HapticManager.impact(style)
                     selectedStepSize = stepSize
                     viewModel.incrementActivity(by: stepSize)
                 }
@@ -199,9 +205,6 @@ class ActivityCardViewModel: ObservableObject {
             try context.save()
             updateDisplayValues()
             
-            // Haptic feedback based on value
-            let impactStyle: UIImpactFeedbackGenerator.FeedbackStyle = value > 1 ? .heavy : .medium
-            HapticManager.impact(impactStyle)
             
         } catch {
             AppLogger.error("Error saving session: \(error)")

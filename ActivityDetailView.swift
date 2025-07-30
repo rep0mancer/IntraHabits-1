@@ -145,7 +145,10 @@ struct ActivityDetailView: View {
                 .foregroundColor(activity.displayColor)
             
             HStack(spacing: DesignSystem.Spacing.sm) {
-                Button(action: { viewModel.incrementActivity(by: 1) }) {
+                Button(action: {
+                    HapticManager.impact(.medium)
+                    viewModel.incrementActivity(by: 1)
+                }) {
                     HStack {
                         Image(systemName: "plus")
                         Text("+1")
@@ -153,7 +156,10 @@ struct ActivityDetailView: View {
                 }
                 .buttonStyle(SecondaryButtonStyle())
                 
-                Button(action: { viewModel.incrementActivity(by: 5) }) {
+                Button(action: {
+                    HapticManager.impact(.heavy)
+                    viewModel.incrementActivity(by: 5)
+                }) {
                     HStack {
                         Image(systemName: "plus")
                         Text("+5")
@@ -364,8 +370,6 @@ class ActivityDetailViewModel: ObservableObject {
             updateDisplayValues()
             loadRecentSessions()
             
-            // Haptic feedback
-            HapticManager.impact(.medium)
 
         } catch {
             AppLogger.error("Error saving session: \(error)")
