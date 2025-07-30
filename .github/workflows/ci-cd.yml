@@ -21,12 +21,10 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    - name: Install SwiftLint
-      run: brew install swiftlint
+    - name: Install SwiftLint and SwiftFormat
+      run: brew install swiftlint swiftformat
     - name: Lint Swift
       run: swiftlint lint --strict
-    - name: Install SwiftFormat
-      run: brew install swiftformat
     - name: Format Swift
       run: swiftformat --lint .
 

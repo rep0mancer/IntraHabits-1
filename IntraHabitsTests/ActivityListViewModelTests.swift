@@ -8,9 +8,8 @@ final class ActivityListViewModelTests: XCTestCase {
         }
     }
 
-    func testActivityListViewModelFetch() async throws {
+    func testActivityListViewModelInit() throws {
         let vm = ActivityListViewModel()
-        await MainActor.run {}
-        XCTAssertTrue(vm.activities.isEmpty)
+        XCTAssertNil(vm.errorMessage)
     }
 }

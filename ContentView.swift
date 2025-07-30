@@ -4,7 +4,6 @@ import CoreData
 struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var coordinator: NavigationCoordinator
-    @StateObject private var viewModel = ActivityListViewModel()
     @State private var editingActivity: Activity?
     
     @FetchRequest(
@@ -34,16 +33,7 @@ struct ContentView: View {
                 destinationView(for: destination)
             }
         }
-        .onAppear {
-            viewModel.setContext(viewContext)
-        }
-        .refreshable {
-            viewModel.loadActivities()
-        }
-        .sheet(item: $editingActivity, onDismiss: {
-            // Reload activities after editing
-            viewModel.loadActivities()
-        }) { activity in
+        .sheet(item: $editingActivity) { activity in
             EditActivityView(activity: activity)
                 .environment(\.managedObjectContext, viewContext)
         }
@@ -92,14 +82,7 @@ struct ContentView: View {
     // MARK: - Content View
     @ViewBuilder
     private var contentView: some View {
-        if viewModel.isLoading {
-            LoadingView("home.loading")
-        } else if let errorMessage = viewModel.errorMessage {
-            ErrorView(
-                error: NSError(domain: "IntraHabits", code: 0, userInfo: [NSLocalizedDescriptionKey: errorMessage]),
-                retryAction: { viewModel.loadActivities() }
-            )
-        } else if activities.isEmpty {
+        if activities.isEmpty {
             emptyStateView
         } else {
             activityListView
@@ -204,7 +187,15 @@ struct ContentView: View {
     private func moveActivities(from source: IndexSet, to destination: Int) {
         var activitiesArray = Array(activities)
         activitiesArray.move(fromOffsets: source, toOffset: destination)
-        viewModel.reorderActivities(from: source, to: destination)
+        for (index, activity) in activitiesArray.enumerated() {
+            activity.sortOrder = Int32(index)
+        }
+        do {
+            try viewContext.save()
+        } catch {
+            // Handle the error appropriately, e.g., show an alert
+            print("Failed to reorder activities: \(error.localizedDescription)")
+        }
     }
     
     private func deleteActivities(offsets: IndexSet) {
@@ -215,7 +206,15 @@ struct ContentView: View {
     }
     
     private func deleteActivity(_ activity: Activity) {
-        viewModel.deleteActivity(activity)
+        activity.isActive = false
+        activity.updatedAt = Date()
+        do {
+            try viewContext.save()
+            HapticManager.notification(.success)
+        } catch {
+            // Handle the error appropriately
+            print("Failed to delete activity: \(error.localizedDescription)")
+        }
     }
 }
 
