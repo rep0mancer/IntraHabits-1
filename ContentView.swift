@@ -5,13 +5,12 @@ struct ContentView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var coordinator: NavigationCoordinator
     @State private var editingActivity: Activity?
-    
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)],
-        predicate: NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true)),
-        animation: .default
-    )
-    private var activities: FetchedResults<Activity>
+
+    @ObservedObject var viewModel: ActivityListViewModel
+
+    init(viewModel: ActivityListViewModel = ActivityListViewModel()) {
+        self.viewModel = viewModel
+    }
     
     var body: some View {
         NavigationStack(path: $coordinator.navigationPath) {
@@ -32,6 +31,9 @@ struct ContentView: View {
             .navigationDestination(for: NavigationDestination.self) { destination in
                 destinationView(for: destination)
             }
+            .onAppear {
+                viewModel.setContext(viewContext)
+            }
         }
         .sheet(item: $editingActivity) { activity in
             EditActivityView(activity: activity)
@@ -48,7 +50,7 @@ struct ContentView: View {
                     .foregroundColor(.primary)
                     .dynamicTypeSize()
                 
-                if !activities.isEmpty {
+                if !viewModel.activities.isEmpty {
                     Text("home.subtitle")
                         .font(DesignSystem.Typography.subheadline)
                         .foregroundColor(.secondary)
@@ -82,7 +84,7 @@ struct ContentView: View {
     // MARK: - Content View
     @ViewBuilder
     private var contentView: some View {
-        if activities.isEmpty {
+        if viewModel.activities.isEmpty {
             emptyStateView
         } else {
             activityListView
@@ -105,8 +107,12 @@ struct ContentView: View {
         ZStack(alignment: .bottomTrailing) {
             ScrollView {
                 LazyVStack(spacing: DesignSystem.Spacing.md) {
-                    ForEach(activities, id: \.id) { activity in
-                        ActivityCard(activity: activity)
+                    ForEach(viewModel.activities, id: \.id) { activity in
+                        ActivityCard(activity: activity, viewModel: {
+                            let vm = ActivityCardViewModel()
+                            vm.setActivity(activity, context: viewContext)
+                            return vm
+                        }())
                             .environment(\.managedObjectContext, viewContext)
                             .onTapGesture {
                                 coordinator.presentActivityDetail(for: activity)
@@ -185,7 +191,7 @@ struct ContentView: View {
     
     // MARK: - Actions
     private func moveActivities(from source: IndexSet, to destination: Int) {
-        var activitiesArray = Array(activities)
+        var activitiesArray = viewModel.activities
         activitiesArray.move(fromOffsets: source, toOffset: destination)
         for (index, activity) in activitiesArray.enumerated() {
             activity.sortOrder = Int32(index)
@@ -200,7 +206,7 @@ struct ContentView: View {
     
     private func deleteActivities(offsets: IndexSet) {
         for index in offsets {
-            let activity = activities[index]
+            let activity = viewModel.activities[index]
             deleteActivity(activity)
         }
     }
@@ -299,7 +305,7 @@ class ActivityListViewModel: ObservableObject {
 // MARK: - Preview
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView()
+        ContentView(viewModel: ActivityListViewModel())
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
             .environmentObject(NavigationCoordinator())
             .preferredColorScheme(.dark)

@@ -3,6 +3,11 @@ import CloudKit
 import CoreData
 import Combine
 
+private struct CloudKitConstants {
+    static let activityRecordType = "Activity"
+    static let sessionRecordType = "ActivitySession"
+}
+
 class CloudKitService: ObservableObject {
     @Published var isSignedIn = false
     
@@ -16,8 +21,8 @@ class CloudKitService: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     // CloudKit Record Types
-    private let activityRecordType = "Activity"
-    private let sessionRecordType = "ActivitySession"
+    private let activityRecordType = CloudKitConstants.activityRecordType
+    private let sessionRecordType = CloudKitConstants.sessionRecordType
     
     
     init(container: CKContainer = CKContainer(identifier: "iCloud.com.intrahabits.app")) {
@@ -103,13 +108,17 @@ class CloudKitService: ObservableObject {
             }
             UserDefaults.standard.set(syncDate, forKey: "lastCloudKitSync")
 
-        } catch {
-            // Handle errors by updating UI on the main thread
+        } catch let error as CKError {
             await MainActor.run {
                 self.syncError = error
                 self.syncStatus = .failed
-                AppLogger.error("Sync failed: \(error)")
-                AppDependencies.shared.errorHandler.handle(error)
+                AppLogger.error("Sync failed with CKError: \(error.localizedDescription)")
+            }
+        } catch {
+            await MainActor.run {
+                self.syncError = error
+                self.syncStatus = .failed
+                AppLogger.error("Sync failed with non-CloudKit error: \(error)")
             }
         }
     }

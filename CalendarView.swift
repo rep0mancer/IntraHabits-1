@@ -396,7 +396,7 @@ class CalendarViewModel: ObservableObject {
         
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: date)
-        let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
+        guard let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay) else { return }
         
         let request: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
         request.predicate = NSPredicate(format: "sessionDate >= %@ AND sessionDate < %@", 

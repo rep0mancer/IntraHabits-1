@@ -235,8 +235,9 @@ struct OpenActivityIntent: AppIntent {
     
     func perform() async throws -> some IntentResult {
         // Open the main app with deep link to the specific activity
-        let url = URL(string: "intrahabits://activity/\(activity.id)")!
-        await OpenURLIntent(url).perform()
+        if let url = URL(string: "intrahabits://activity/\(activity.id)") {
+            await OpenURLIntent(url).perform()
+        }
         
         return .result()
     }

@@ -2,11 +2,12 @@ import SwiftUI
 
 struct RootView: View {
     @StateObject var cloudService = CloudKitService()
+    @StateObject private var listViewModel = ActivityListViewModel()
 
     var body: some View {
         Group {
             if cloudService.isSignedIn {
-                ContentView()
+                ContentView(viewModel: listViewModel)
             } else {
                 OnboardingView()
             }

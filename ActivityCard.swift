@@ -4,12 +4,17 @@ import CoreData
 struct ActivityCard: View {
     @Environment(\.managedObjectContext) private var viewContext
     @ObservedObject var activity: Activity
-    @StateObject private var viewModel = ActivityCardViewModel()
+    @StateObject var viewModel: ActivityCardViewModel
     @State private var showingTimer = false
     @State private var showingStepSelector = false
     @State private var selectedStepSize = 1
-    
+
     private let stepSizes = [1, 2, 5, 10, 25, 50]
+
+    init(activity: Activity, viewModel: ActivityCardViewModel = ActivityCardViewModel()) {
+        self.activity = activity
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
     
     var body: some View {
         HStack(spacing: DesignSystem.Spacing.md) {
@@ -26,9 +31,6 @@ struct ActivityCard: View {
         }
         .padding(DesignSystem.Spacing.md)
         .cardStyle(backgroundColor: DesignSystem.Colors.secondaryBackground)
-        .onAppear {
-            viewModel.setActivity(activity, context: viewContext)
-        }
         .sheet(isPresented: $showingTimer) {
             TimerView(activity: activity)
                 .environment(\.managedObjectContext, viewContext)
