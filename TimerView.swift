@@ -7,7 +7,12 @@ struct TimerView: View {
     @Environment(\.dismiss) private var dismiss
     
     @ObservedObject var activity: Activity
-    @StateObject private var viewModel = TimerViewModel()
+    @StateObject private var viewModel: TimerViewModel
+
+    init(activity: Activity) {
+        self.activity = activity
+        _viewModel = StateObject(wrappedValue: TimerViewModel(activity: activity, context: PersistenceController.shared.container.viewContext))
+    }
     
     var body: some View {
         ZStack {
@@ -34,9 +39,6 @@ struct TimerView: View {
                 Spacer()
             }
             .padding(DesignSystem.Spacing.lg)
-        }
-        .onAppear {
-            viewModel.setActivity(activity, context: viewContext)
         }
         .onDisappear {
             viewModel.stopTimer()
@@ -256,23 +258,18 @@ class TimerViewModel: ObservableObject {
     @Published var showingSaveConfirmation = false
     @Published var errorMessage: String?
     
-    private var activity: Activity?
-    private var viewContext: NSManagedObjectContext?
+    private let activity: Activity
+    private let viewContext: NSManagedObjectContext
     private var timer: Timer?
     private var startTime: Date?
     private var pausedDuration: TimeInterval = 0
     private var cancellables = Set<AnyCancellable>()
-    
-    var formattedTime: String {
-        formatDuration(currentDuration)
-    }
-    
-    func setActivity(_ activity: Activity, context: NSManagedObjectContext) {
+
+    init(activity: Activity, context: NSManagedObjectContext) {
         self.activity = activity
         self.viewContext = context
         updateTodaysTotal()
-        
-        // Listen for context changes
+
         NotificationCenter.default.publisher(for: .NSManagedObjectContextDidSave)
             .sink { [weak self] _ in
                 DispatchQueue.main.async {
@@ -281,6 +278,11 @@ class TimerViewModel: ObservableObject {
             }
             .store(in: &cancellables)
     }
+    
+    var formattedTime: String {
+        formatDuration(currentDuration)
+    }
+    
     
     func startTimer() {
         guard timerState == .stopped else { return }
@@ -316,9 +318,9 @@ class TimerViewModel: ObservableObject {
     
     
     func saveSession() -> Bool {
-        guard let activity = activity,
-              let context = viewContext,
-              currentDuration > 0 else { return false }
+        let activity = activity
+        let context = viewContext
+        guard currentDuration > 0 else { return false }
 
         let session = ActivitySession(context: context)
         session.id = UUID()
@@ -370,7 +372,6 @@ class TimerViewModel: ObservableObject {
     }
     
     private func updateTodaysTotal() {
-        guard let activity = activity else { return }
         todaysFormattedTotal = activity.todaysFormattedTotal()
     }
     

@@ -3,30 +3,12 @@ import CoreData
 import Combine
 
 class ActivityListViewModel: ObservableObject {
-    @Published var activities: [Activity] = []
-    @Published var isLoading = false
     @Published var errorMessage: String?
-    
+
     private var viewContext: NSManagedObjectContext?
-    private var cancellables = Set<AnyCancellable>()
     
     func setContext(_ context: NSManagedObjectContext) {
         self.viewContext = context
-        loadActivities()
-    }
-    
-    func loadActivities() {
-        guard let context = viewContext else { return }
-        
-        let request: NSFetchRequest<Activity> = Activity.fetchRequest()
-        request.sortDescriptors = [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)]
-        request.predicate = NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true))
-        
-        do {
-            activities = try context.fetch(request)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
     }
     
     func deleteActivity(_ activity: Activity) {
@@ -37,25 +19,23 @@ class ActivityListViewModel: ObservableObject {
         
         do {
             try context.save()
-            loadActivities()
         } catch {
             errorMessage = error.localizedDescription
         }
     }
     
-    func reorderActivities(from source: IndexSet, to destination: Int) {
+    func reorderActivities(from source: IndexSet, to destination: Int, items: [Activity]) {
         guard let context = viewContext else { return }
-        
-        var reorderedActivities = activities
+
+        var reorderedActivities = items
         reorderedActivities.move(fromOffsets: source, toOffset: destination)
-        
+
         for (index, activity) in reorderedActivities.enumerated() {
             activity.sortOrder = Int32(index)
         }
-        
+
         do {
             try context.save()
-            loadActivities()
         } catch {
             errorMessage = error.localizedDescription
         }

@@ -5,7 +5,11 @@ struct AddActivityView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @EnvironmentObject private var coordinator: NavigationCoordinator
     @Environment(\.dismiss) private var dismiss
-    @StateObject private var viewModel = AddActivityViewModel()
+    @StateObject private var viewModel: AddActivityViewModel
+
+    init() {
+        _viewModel = StateObject(wrappedValue: AddActivityViewModel(context: PersistenceController.shared.container.viewContext, storeService: AppDependencies.shared.storeService))
+    }
     
     var body: some View {
         NavigationView {
@@ -39,9 +43,6 @@ struct AddActivityView: View {
                     }
                 }
             }
-        }
-        .onAppear {
-            viewModel.setContext(viewContext)
         }
         .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
             Button("OK") {
@@ -226,20 +227,23 @@ class AddActivityViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var shouldShowPaywall = false
-    
-    private var viewContext: NSManagedObjectContext?
+
+    private let viewContext: NSManagedObjectContext
+    private let storeService: StoreKitService
+
+    init(context: NSManagedObjectContext, storeService: StoreKitService) {
+        self.viewContext = context
+        self.storeService = storeService
+    }
     
     var isFormValid: Bool {
         !activityName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
-    func setContext(_ context: NSManagedObjectContext) {
-        self.viewContext = context
-    }
-    
     @MainActor
     func createActivity() async -> Bool {
-        guard let context = viewContext, isFormValid else { return false }
+        let context = viewContext
+        guard isFormValid else { return false }
         
         isLoading = true
         errorMessage = nil
@@ -253,7 +257,7 @@ class AddActivityViewModel: ObservableObject {
             let existingActivities = try context.fetch(request)
 
             // Check if user has unlocked unlimited activities
-            let hasUnlimitedActivities = AppDependencies.shared.storeService.hasUnlimitedActivities
+            let hasUnlimitedActivities = storeService.hasUnlimitedActivities
             
             if existingActivities.count >= 5 && !hasUnlimitedActivities {
                 shouldShowPaywall = true
