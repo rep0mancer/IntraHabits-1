@@ -49,7 +49,7 @@ public actor SyncEngine {
     /// previous ``SyncStatus`` enum, this type can report progress via a
     /// Double parameter on the ``running`` case and can surface the
     /// underlying ``Error`` if a sync fails.
-    public enum Status {
+    public enum Status: Equatable {
         case idle
         case running(Double)
         case completed
@@ -211,6 +211,14 @@ public actor SyncEngine {
         // entities and persist them in Core Data.
     }
 
+    /// Updates the published status to reflect a running sync with the given
+    /// progress value.  This helper also updates the deprecated ``syncStatus``
+    /// enum for backwards compatibility.  It must be called on the actor.
+    private func updateProgress(_ progress: Double) {
+        status = .running(progress)
+        syncStatus = .running
+    }
+
     // MARK: - Legacy CloudKitService Helper Signatures
     /// Uploads the provided activities to CloudKit.  This method signature
     /// mirrors the one found in the deprecated ``LegacyCloudKitService``.  A
@@ -258,24 +266,32 @@ public actor SyncEngine {
         if case .running = status {
             return
         }
-
-        // Begin sync and report initial progress.
+        // Report that the sync has started.
         status = .running(0.0)
-        // Mirror progress to the deprecated syncStatus enum for legacy callers.
         syncStatus = .running
         do {
-            // Upload any local modifications to CloudKit.
-            try await pushLocalChanges()
-            // Report halfway progress.
-            status = .running(0.5)
-            syncStatus = .running
-            // Download remote modifications.
-            try await pullRemoteChanges()
-            // Mark completion.
+            // Perform local push and remote pull concurrently using a throwing task group.
+            try await withThrowingTaskGroup(of: Void.self) { group in
+                // Task for uploading local changes.
+                group.addTask { [self] in
+                    try await pushLocalChanges()
+                }
+                // Task for downloading remote changes.
+                group.addTask { [self] in
+                    try await pullRemoteChanges()
+                }
+
+                var completedTasks = 0
+                for try await _ in group {
+                    completedTasks += 1
+                    await updateProgress(Double(completedTasks) / 2.0)
+                }
+            }
+            // Sync succeeded.
             status = .completed
             syncStatus = .completed
         } catch {
-            // Surface the error through the published status and deprecated property.
+            // Sync failed; report error.
             status = .failed(error)
             syncStatus = .failed
         }
