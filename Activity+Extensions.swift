@@ -47,11 +47,13 @@ extension Activity {
     /// Total for the previous seven days.  Uses DST‑safe calendar math to
     /// calculate the lower bound and defers to ``totalValue(for:)``.
     func weeklyTotal() -> Double {
-        // Use the calendar's ``weekOfYear`` component to subtract one week
-        // rather than seven days.  This avoids bugs around daylight saving
-        // transitions where a day is not always 24 hours long.
-        guard let weekAgo = Calendar.current.date(byAdding: .weekOfYear, value: -1, to: Date()) else { return 0 }
-        return totalValue(for: weekAgo...Date())
+        // Calculate "one week ago" using noon as a safe anchor to avoid
+        // daylight saving transitions that can make midnight ambiguous.
+        let calendar = Calendar.current
+        let now = Date()
+        let safeNow = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) ?? now
+        guard let weekAgo = calendar.date(byAdding: .weekOfYear, value: -1, to: safeNow) else { return 0 }
+        return totalValue(for: weekAgo...now)
     }
 
     /// Total for the previous month.  Calculates the date one month ago and

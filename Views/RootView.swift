@@ -1,18 +1,26 @@
 import SwiftUI
 
 struct RootView: View {
-    @StateObject var cloudService = CloudKitService()
+    @EnvironmentObject private var syncController: SyncController
     @StateObject private var listViewModel = ActivityListViewModel()
+    @State private var signedIn = false
 
     var body: some View {
         Group {
-            if cloudService.isSignedIn {
+            if signedIn {
                 ContentView(viewModel: listViewModel)
             } else {
                 OnboardingView()
             }
         }
-        .onAppear { Task { await cloudService.checkAccountStatus() } }
+        .onAppear { checkAccountStatus() }
+    }
+
+    private func checkAccountStatus() {
+        Task {
+            let status = await syncController.checkAccountStatus()
+            await MainActor.run { signedIn = status == .available }
+        }
     }
 }
 
