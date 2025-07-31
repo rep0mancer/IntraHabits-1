@@ -21,6 +21,7 @@ struct IntraHabitsApp: App {
                     registerBackgroundTask()
                 }
                 .environmentObject(errorHandler)
+                .environmentObject(AppDependencies.shared.syncController)
                 .alert(isPresented: $errorHandler.showingAlert) {
                     Alert(
                         title: Text("Error"),
@@ -95,7 +96,7 @@ struct IntraHabitsApp: App {
 
         let operation = BlockOperation {
             Task {
-                await AppDependencies.shared.cloudService.startSync()
+                await AppDependencies.shared.cloudService.sync()
                 task.setTaskCompleted(success: true)
             }
         }
