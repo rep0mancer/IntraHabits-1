@@ -8,7 +8,7 @@ struct ContentView: View {
 
     @ObservedObject var viewModel: ActivityListViewModel
 
-    init(viewModel: ActivityListViewModel = ActivityListViewModel()) {
+    init(viewModel: ActivityListViewModel) {
         self.viewModel = viewModel
     }
     
@@ -30,9 +30,6 @@ struct ContentView: View {
             .navigationBarHidden(true)
             .navigationDestination(for: NavigationDestination.self) { destination in
                 destinationView(for: destination)
-            }
-            .onAppear {
-                viewModel.setContext(viewContext)
             }
         }
         .sheet(item: $editingActivity) { activity in
@@ -223,7 +220,7 @@ struct ContentView: View {
 // MARK: - Preview
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
-        ContentView(viewModel: ActivityListViewModel())
+        ContentView(viewModel: ActivityListViewModel(context: PersistenceController.preview.container.viewContext))
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
             .environmentObject(NavigationCoordinator())
             .preferredColorScheme(.dark)

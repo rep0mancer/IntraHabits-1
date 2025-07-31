@@ -2,20 +2,20 @@ import Foundation
 import CoreData
 import Combine
 
-class ActivityListViewModel: ObservableObject {
+final class ActivityListViewModel: ObservableObject {
     @Published var activities: [Activity] = []
     @Published var cardViewModels: [UUID: ActivityCardViewModel] = [:]
     @Published var errorMessage: String?
 
-    private var viewContext: NSManagedObjectContext?
-    
-    func setContext(_ context: NSManagedObjectContext) {
+    private let viewContext: NSManagedObjectContext
+
+    init(context: NSManagedObjectContext) {
         self.viewContext = context
         fetchActivities()
     }
 
     func fetchActivities() {
-        guard let context = viewContext else { return }
+        let context = viewContext
         let request: NSFetchRequest<Activity> = Activity.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)]
         request.predicate = NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true))
@@ -35,7 +35,7 @@ class ActivityListViewModel: ObservableObject {
     }
     
     func deleteActivity(_ activity: Activity) {
-        guard let context = viewContext else { return }
+        let context = viewContext
         
         activity.isActive = false
         activity.updatedAt = Date()
@@ -48,7 +48,7 @@ class ActivityListViewModel: ObservableObject {
     }
     
     func reorderActivities(from source: IndexSet, to destination: Int, items: [Activity]) {
-        guard let context = viewContext else { return }
+        let context = viewContext
 
         var reorderedActivities = items
         reorderedActivities.move(fromOffsets: source, toOffset: destination)

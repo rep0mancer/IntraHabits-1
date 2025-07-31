@@ -11,7 +11,7 @@ struct IntraHabitsApp: App {
     
     var body: some Scene {
         WindowGroup {
-            RootView()
+            RootView(context: persistenceController.container.viewContext)
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .withNavigationCoordinator()
                 .preferredColorScheme(.dark)

@@ -4,22 +4,23 @@ import Combine
 
 // MARK: - Activity List View Model
 /// View model responsible for fetching, ordering and soft deleting activities. Each activity is also paired with its own `ActivityCardViewModel`.
-class ActivityListViewModel: ObservableObject {
+final class ActivityListViewModel: ObservableObject {
     @Published var activities: [Activity] = []
     @Published var cardViewModels: [UUID: ActivityCardViewModel] = [:]
     @Published var errorMessage: String?
 
-    private var viewContext: NSManagedObjectContext?
+    private let viewContext: NSManagedObjectContext
 
-    /// Assigns the managed object context and loads the activities from storage.
-    func setContext(_ context: NSManagedObjectContext) {
+    /// Creates the view model with the required managed object context and
+    /// immediately loads all activities.
+    init(context: NSManagedObjectContext) {
         self.viewContext = context
         fetchActivities()
     }
 
     /// Fetches all active activities from Core Data, sorts them by their `sortOrder` and instantiates a corresponding card view model for each.
     func fetchActivities() {
-        guard let context = viewContext else { return }
+        let context = viewContext
         let request: NSFetchRequest<Activity> = Activity.fetchRequest()
         request.sortDescriptors = [NSSortDescriptor(keyPath: \Activity.sortOrder, ascending: true)]
         request.predicate = NSPredicate(format: "%K == %@", #keyPath(Activity.isActive), NSNumber(value: true))
@@ -40,7 +41,7 @@ class ActivityListViewModel: ObservableObject {
 
     /// Soft deletes an activity by marking it inactive and updating its `updatedAt` timestamp.
     func deleteActivity(_ activity: Activity) {
-        guard let context = viewContext else { return }
+        let context = viewContext
         activity.isActive = false
         activity.updatedAt = Date()
         do {
@@ -52,7 +53,7 @@ class ActivityListViewModel: ObservableObject {
 
     /// Persists a new ordering for activities after a drag and drop reorder operation.
     func reorderActivities(from source: IndexSet, to destination: Int, items: [Activity]) {
-        guard let context = viewContext else { return }
+        let context = viewContext
         var reorderedActivities = items
         reorderedActivities.move(fromOffsets: source, toOffset: destination)
         for (index, activity) in reorderedActivities.enumerated() {
