@@ -275,16 +275,17 @@ public actor SyncEngine {
                 // Task for uploading local changes.
                 group.addTask { [self] in
                     try await pushLocalChanges()
-                    // Update progress to reflect completion of the first half.
-                    await self.updateProgress(0.5)
                 }
                 // Task for downloading remote changes.
                 group.addTask { [self] in
                     try await pullRemoteChanges()
-                    // Progress for pull completion will be set when group finishes.
                 }
-                // Wait for both tasks.
-                try await group.waitForAll()
+
+                var completedTasks = 0
+                for try await _ in group {
+                    completedTasks += 1
+                    await updateProgress(Double(completedTasks) / 2.0)
+                }
             }
             // Sync succeeded.
             status = .completed
