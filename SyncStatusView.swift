@@ -5,21 +5,22 @@ import CloudKit
 /// trigger a manual synchronisation.  This view has been updated to use the
 /// new ``SyncEngine`` actor rather than the deprecated ``LegacyCloudKitService``.
 struct SyncStatusView: View {
-    /// The UI observes a ``SyncController`` rather than the actor directly.
-    /// ``@StateObject`` ensures the controller's lifetime is tied to the
-    /// view and that updates are delivered on the main thread.
-    @StateObject private var syncController: SyncController = AppDependencies.shared.syncController
+    /// The sync controller is injected via the environment.  This allows
+    /// multiple views to share the same controller instance without
+    /// constructing new ones.  Use ``@EnvironmentObject`` rather than
+    /// ``@StateObject`` to participate in dependency injection.
+    @EnvironmentObject private var sync: SyncController
     @State private var accountStatus: CKAccountStatus = .couldNotDetermine
     @State private var isCheckingAccount = false
 
-    /// A computed property that maps the ``SyncEngine.SyncStatus`` to a
+    /// A computed property that maps the ``SyncEngine.Status`` to a
     /// localised string for display.  Presentation logic is kept out of
     /// domain and service types.
     private var syncStatusText: String {
-        switch syncController.syncStatus {
+        switch sync.status {
         case .idle:
             return NSLocalizedString("sync.status.idle", comment: "")
-        case .running:
+        case .running(_):
             return NSLocalizedString("sync.status.syncing", comment: "")
         case .completed:
             return NSLocalizedString("sync.status.completed", comment: "")
@@ -40,9 +41,9 @@ struct SyncStatusView: View {
 
             // Manual Sync Button
             Button(action: {
-                Task {
-                    await syncController.startSync()
-                }
+                // Trigger a sync without detaching.  The controller
+                // schedules its own Task internally.
+                sync.manuallyTrigger()
             }) {
                 Text("sync.manual_sync")
             }
@@ -57,7 +58,7 @@ struct SyncStatusView: View {
     private func checkAccountStatus() {
         isCheckingAccount = true
         Task {
-            let status = await syncController.checkAccountStatus()
+            let status = await sync.checkAccountStatus()
             await MainActor.run {
                 self.accountStatus = status
                 self.isCheckingAccount = false
