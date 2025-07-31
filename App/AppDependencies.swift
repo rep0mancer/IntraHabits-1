@@ -4,10 +4,9 @@ import Foundation
 /// refactored architecture the CloudKit service has been replaced with the
 /// ``SyncEngine`` actor which encapsulates all synchronisation logic.
 final class AppDependencies {
-    /// The underlying CloudKit sync engine.  ``LegacyCloudKitService`` is retained
-    /// only for backwards compatibility during migration.  The engine
-    /// encapsulates all network and persistence operations and exposes
-    /// ``SyncEngine.SyncStatus`` for observing state.
+    /// The underlying CloudKit sync engine responsible for all network and
+    /// persistence operations.  It exposes ``SyncEngine.Status`` for observing
+    /// state changes.
     let cloudService: SyncEngine
 
     /// A lightweight, @MainActor wrapper around ``SyncEngine`` that is
