@@ -23,7 +23,7 @@ struct RootView: View {
     private func checkAccountStatus() {
         Task {
             let status = await syncController.checkAccountStatus()
-            await MainActor.run { signedIn = status == .available }
+            signedIn = status == .available
         }
     }
 }
