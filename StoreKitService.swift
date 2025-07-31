@@ -15,7 +15,7 @@ class StoreKitService: ObservableObject {
     @Published var errorMessage: String?
     
     // Transaction listener
-    private var transactionListener: Task<Void, Error>?
+    private var transactionListener: Task<Void, Never>?
 
     init() {
         // Start listening for transactions
@@ -139,18 +139,13 @@ class StoreKitService: ObservableObject {
     
     // MARK: - Transaction Listening
     
-    private func listenForTransactions() -> Task<Void, Error> {
-        return Task.detached {
+    private func listenForTransactions() -> Task<Void, Never> {
+        Task(priority: .background) { [weak self] in
+            guard let self else { return }
             for await result in Transaction.updates {
                 do {
                     let transaction = try self.checkVerified(result)
-                    
-                    await MainActor.run {
-                        Task {
-                            await self.updatePurchaseStatus()
-                        }
-                    }
-                    
+                    await self.updatePurchaseStatus()
                     await transaction.finish()
                 } catch {
                     AppLogger.error("Transaction update error: \(error)")
