@@ -43,12 +43,19 @@ public actor SyncEngine {
 
     /// Represents the overall state of a sync operation.  UI code should
     /// observe this value to update its presentation.  It starts as `.idle` and
-    /// transitions through `.syncing`, `.completed` or `.failed` as
+    /// transitions through `.running`, `.completed` or `.failed` as
     /// appropriate.
     public enum SyncStatus {
+        /// No sync is currently in progress.
         case idle
-        case syncing
+        /// A sync is actively running.  The service updates to this state
+        /// whenever ``startSync()`` is invoked and remains until the
+        /// operation finishes.
+        case running
+        /// The most recent sync completed successfully.
         case completed
+        /// The most recent sync failed.  Check logs or UI for error
+        /// information.
         case failed
     }
 
@@ -119,6 +126,13 @@ public actor SyncEngine {
             if let newZoneToken = zoneChanges.changeToken {
                 try await self.persistZoneChangeToken(newZoneToken)
             }
+
+            // After persisting the token, delegate to per‑entity download
+            // helpers to process the delta changes.  These methods will
+            // eventually transform CKRecord deltas into managed objects and
+            // delete any removed records.  They are currently stubs.
+            try await downloadActivities()
+            try await downloadSessions()
         }
 
         // Persist the new database change token if one was provided.
@@ -132,7 +146,46 @@ public actor SyncEngine {
     /// interface of ``LegacyCloudKitService``; its implementation requires tracking
     /// changed objects in Core Data and is beyond the scope of this refactor.
     public func uploadLocalChanges() async throws {
-        // TODO: Implement uploading of Activities and Sessions.
+        // Delegate uploading into granular helper methods.  These helpers
+        // should locate changed entities in Core Data and convert them
+        // into CKRecord values for submission.  They are currently
+        // stubs pending a full Core Data change tracking mechanism.
+        try await uploadActivities()
+        try await uploadSessions()
+    }
+
+    /// Uploads all modified Activity records to CloudKit.  This helper
+    /// encapsulates the logic for encoding ``Activity`` into CKRecord
+    /// instances and saving them to the private database.  The actual
+    /// implementation will depend on how change tracking is performed in
+    /// Core Data and is thus left as a TODO.
+    private func uploadActivities() async throws {
+        // TODO: Query Core Data for changed Activity objects and save them
+        // to CloudKit.  Use CKModifyRecordsOperation for batch efficiency.
+    }
+
+    /// Uploads all modified ActivitySession records to CloudKit.  Similar to
+    /// ``uploadActivities()``, this helper is responsible for serialising
+    /// ActivitySession objects into CKRecord values and persisting them.
+    private func uploadSessions() async throws {
+        // TODO: Query Core Data for changed ActivitySession objects and save
+        // them to CloudKit.
+    }
+
+    /// Downloads updated Activity records from CloudKit based on the delta
+    /// information returned by the ``recordZoneChanges(inZoneWith:since:)`` API.
+    /// Implementations should map CKRecords into Core Data managed objects.
+    private func downloadActivities() async throws {
+        // TODO: Convert changed CKRecord objects into Activity entities and
+        // persist them in Core Data.  Delete local objects that were removed.
+    }
+
+    /// Downloads updated ActivitySession records from CloudKit.  Like
+    /// ``downloadActivities()``, this helper handles translating CKRecords
+    /// into managed objects and applying deletions.
+    private func downloadSessions() async throws {
+        // TODO: Convert changed CKRecord objects into ActivitySession
+        // entities and persist them in Core Data.
     }
 
     // MARK: - Public Sync Entry Point
@@ -141,8 +194,8 @@ public actor SyncEngine {
     /// updated to `.completed` or `.failed` depending on the outcome.
     public func startSync() async {
         // Prevent re‑entrancy
-        guard syncStatus != .syncing else { return }
-        syncStatus = .syncing
+        guard syncStatus != .running else { return }
+        syncStatus = .running
         do {
             // Upload local changes (stubbed out)
             try await uploadLocalChanges()
