@@ -2,14 +2,10 @@ import XCTest
 @testable import IntraHabits
 
 final class ActivityListViewModelTests: XCTestCase {
-    class MockCloudKitService: CloudKitService {
-        override init(container: CKContainer = CKContainer(identifier: "iCloud.com.intrahabits.test")) {
-            super.init(container: container)
-        }
-    }
 
     func testActivityListViewModelInit() throws {
-        let vm = ActivityListViewModel()
+        let context = PersistenceController(inMemory: true).container.viewContext
+        let vm = ActivityListViewModel(context: context)
         XCTAssertNil(vm.errorMessage)
     }
 }

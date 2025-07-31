@@ -73,11 +73,14 @@ extension Activity {
         }
     }
 
-    /// Returns the total value for the last seven days.
+    /// Returns the total value for the last seven days using DST-safe
+    /// calculations.
     func weeklyTotal() -> Double {
         let calendar = Calendar.current
-        guard let weekAgo = calendar.date(byAdding: .day, value: -7, to: Date()) else { return 0 }
-        let range = weekAgo...Date()
+        let now = Date()
+        let safeNow = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) ?? now
+        guard let weekAgo = calendar.date(byAdding: .weekOfYear, value: -1, to: safeNow) else { return 0 }
+        let range = weekAgo...now
         let weeklySessions = sessions(for: range)
         if isTimerType {
             return weeklySessions.reduce(0) { $0 + $1.duration }
