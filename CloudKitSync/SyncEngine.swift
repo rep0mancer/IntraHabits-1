@@ -49,7 +49,7 @@ public actor SyncEngine {
     /// previous ``SyncStatus`` enum, this type can report progress via a
     /// Double parameter on the ``running`` case and can surface the
     /// underlying ``Error`` if a sync fails.
-    public enum Status: Equatable {
+    public enum Status {
         case idle
         case running(Double)
         case completed
