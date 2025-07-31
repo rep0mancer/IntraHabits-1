@@ -45,22 +45,38 @@ public actor SyncEngine {
     /// observe this value to update its presentation.  It starts as `.idle` and
     /// transitions through `.running`, `.completed` or `.failed` as
     /// appropriate.
-    public enum SyncStatus {
-        /// No sync is currently in progress.
+    /// Represents the public state of a synchronisation.  Unlike the
+    /// previous ``SyncStatus`` enum, this type can report progress via a
+    /// Double parameter on the ``running`` case and can surface the
+    /// underlying ``Error`` if a sync fails.
+    public enum Status: Equatable {
         case idle
-        /// A sync is actively running.  The service updates to this state
-        /// whenever ``startSync()`` is invoked and remains until the
-        /// operation finishes.
-        case running
-        /// The most recent sync completed successfully.
+        case running(Double)
         case completed
-        /// The most recent sync failed.  Check logs or UI for error
-        /// information.
+        case failed(Error)
+    }
+
+    /// A published stream of status updates.  The ``@Published`` property
+    /// wrapper exposes a Combine publisher that can be bridged to the
+    /// main actor via the ``SyncController``.  The actor maintains
+    /// exclusivity by marking this property ``private(set)``.
+    @Published private(set) var status: Status = .idle
+
+    // Preserve the legacy ``SyncStatus`` for backward compatibility.  This
+    // internal enum is now deprecated and should not be observed by UI code.
+    @available(*, deprecated, message: "Use status instead")
+    public enum SyncStatus {
+        case idle
+        case running
+        case completed
         case failed
     }
 
     /// The current sync status.  Marked ``private(set)`` so only the actor
     /// itself may mutate the value.
+    // Retain the legacy ``syncStatus`` property to support older call sites.
+    // Internally this value is kept in sync with ``status`` but offers no
+    // progress information.  UI code should observe ``status`` instead.
     private(set) public var syncStatus: SyncStatus = .idle
 
     // MARK: - Initialisation
@@ -154,6 +170,13 @@ public actor SyncEngine {
         try await uploadSessions()
     }
 
+    /// Pushes any unsynchronised local changes to CloudKit.  This method
+    /// provides a semantic wrapper around ``uploadLocalChanges()`` and
+    /// exists to align with the naming in the new ``sync()`` workflow.
+    private func pushLocalChanges() async throws {
+        try await uploadLocalChanges()
+    }
+
     /// Uploads all modified Activity records to CloudKit.  This helper
     /// encapsulates the logic for encoding ``Activity`` into CKRecord
     /// instances and saving them to the private database.  The actual
@@ -188,23 +211,82 @@ public actor SyncEngine {
         // entities and persist them in Core Data.
     }
 
+    // MARK: - Legacy CloudKitService Helper Signatures
+    /// Uploads the provided activities to CloudKit.  This method signature
+    /// mirrors the one found in the deprecated ``LegacyCloudKitService``.  A
+    /// concrete implementation will iterate over the array, convert each
+    /// ``Activity`` into a ``CKRecord``, and persist it via a modify
+    /// operation.
+    private func uploadActivities(_ activities: [Activity]) async throws {
+        // TODO: Implement uploading of specific Activity objects.  Use
+        // CKModifyRecordsOperation for efficiency.
+    }
+
+    /// Uploads the provided activity sessions to CloudKit.  See
+    /// ``uploadActivities(_:)`` for details.
+    private func uploadSessions(_ sessions: [ActivitySession]) async throws {
+        // TODO: Implement uploading of specific ActivitySession objects.
+    }
+
+    /// Processes a fetched ``CKRecord`` representing an Activity.  A concrete
+    /// implementation will map record fields onto an existing or new
+    /// ``Activity`` managed object.
+    private func processActivityRecord(_ record: CKRecord) async throws {
+        // TODO: Convert record into Activity and persist to Core Data.
+    }
+
+    /// Processes a fetched ``CKRecord`` representing an ActivitySession.
+    private func processSessionRecord(_ record: CKRecord) async throws {
+        // TODO: Convert record into ActivitySession and persist to Core Data.
+    }
+
+    /// Constructs a predicate that matches unsynchronised objects.  The
+    /// signature mirrors the deprecated service's helper.  Clients should
+    /// supply the entity name and any additional filtering criteria.
+    private func predicateForUnsynced(entityName: String, lastSync: Date?) -> NSPredicate {
+        // TODO: Build an NSPredicate that filters objects with a nil
+        // ``syncDate`` or a ``syncDate`` later than ``lastSync``.
+        return NSPredicate(value: true)
+    }
+
     // MARK: - Public Sync Entry Point
-    /// Initiates a synchronisation cycle.  If a sync is already in progress
-    /// subsequent calls are ignored.  On completion the ``syncStatus`` is
-    /// updated to `.completed` or `.failed` depending on the outcome.
-    public func startSync() async {
-        // Prevent re‑entrancy
-        guard syncStatus != .running else { return }
+    /// Initiates a synchronisation cycle using the new ``Status`` API.  This
+    /// method updates ``status`` throughout the sync to report progress.  On
+    /// completion ``status`` will be `.completed` or `.failed(Error)`.
+    public func sync() async {
+        // If a sync is already running we ignore subsequent requests.
+        if case .running = status {
+            return
+        }
+
+        // Begin sync and report initial progress.
+        status = .running(0.0)
+        // Mirror progress to the deprecated syncStatus enum for legacy callers.
         syncStatus = .running
         do {
-            // Upload local changes (stubbed out)
-            try await uploadLocalChanges()
-            // Download remote changes
+            // Upload any local modifications to CloudKit.
+            try await pushLocalChanges()
+            // Report halfway progress.
+            status = .running(0.5)
+            syncStatus = .running
+            // Download remote modifications.
             try await pullRemoteChanges()
+            // Mark completion.
+            status = .completed
             syncStatus = .completed
         } catch {
+            // Surface the error through the published status and deprecated property.
+            status = .failed(error)
             syncStatus = .failed
         }
+    }
+
+    /// DEPRECATED: Use ``sync()`` instead.  This method maintains backward
+    /// compatibility with call sites expecting the old behaviour.  It
+    /// delegates to ``sync()`` and then maps ``status`` into ``syncStatus``.
+    @available(*, deprecated, message: "Use sync() instead")
+    public func startSync() async {
+        await sync()
     }
 
     // MARK: - Token Persistence

@@ -14,30 +14,30 @@ public final class SyncController: ObservableObject {
     private let engine: SyncEngine
 
     /// Published view of the current sync status.  Updates are pushed to
-    /// observers on the main thread whenever a sync completes.
-    @Published public var syncStatus: SyncEngine.SyncStatus
+    /// observers on the main thread whenever the underlying actor publishes
+    /// a new value.
+    @Published private(set) public var status: SyncEngine.Status = .idle
 
     /// Creates a new controller that wraps the provided ``SyncEngine``.
     /// - Parameter engine: The actor responsible for performing sync
     ///   operations.  Defaults to the shared engine in ``AppDependencies``.
     public init(engine: SyncEngine = AppDependencies.shared.cloudService) {
         self.engine = engine
-        self.syncStatus = engine.syncStatus
+        self.status = engine.status
+        // Observe the actor's @Published status and mirror it on the main
+        // actor.  This task inherits the caller's structured context and
+        // avoids the use of Task.detached.
+        Task { [weak self] in
+            for await value in engine.$status.values {
+                await self?.updateStatus(value)
+            }
+        }
     }
 
-    /// Triggers a full sync cycle.  The controller first updates
-    /// ``syncStatus`` to `.running` to reflect that work has begun, then
-    /// invokes ``SyncEngine.startSync()``.  After completion it copies
-    /// the final status from the actor.  This method may be called from
-    /// synchronous contexts by wrapping it in a `Task`.
-    public func startSync() async {
-        // Immediately update the published status so the UI reflects that
-        // work is underway.
-        syncStatus = .running
-        await engine.startSync()
-        // After the actor finishes, read its status and mirror it.
-        let finalStatus = await engine.syncStatus
-        syncStatus = finalStatus
+    /// Initiates a sync by calling the actor's ``SyncEngine.sync()`` method.
+    /// This method should be invoked from UI contexts via `Task {}`.
+    public func manuallyTrigger() {
+        Task { await engine.sync() }
     }
 
     /// Fetches the user's iCloud account status by delegating to the
@@ -45,5 +45,11 @@ public final class SyncController: ObservableObject {
     /// - Returns: The ``CKAccountStatus`` describing the user's account.
     public func checkAccountStatus() async -> CKAccountStatus {
         return await engine.checkAccountStatus()
+    }
+
+    /// Mirrors a new ``SyncEngine.Status`` onto this controller.  Called from
+    /// the background observation task when the actor publishes a change.
+    private func updateStatus(_ status: SyncEngine.Status) async {
+        self.status = status
     }
 }
