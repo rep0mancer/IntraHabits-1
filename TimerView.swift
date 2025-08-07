@@ -40,6 +40,15 @@ struct TimerView: View {
             }
             .padding(DesignSystem.Spacing.lg)
         }
+        .onAppear {
+            // Recreate view model if environment context differs
+            // Note: We keep activity reference identical.
+            if viewContext != viewModel.viewContext {
+                let newVM = TimerViewModel(activity: activity, context: viewContext)
+                _viewModel.wrappedValue = newVM
+            }
+            viewModel.updateTodaysTotal()
+        }
         .onDisappear {
             viewModel.stopTimer()
         }
@@ -56,12 +65,10 @@ struct TimerView: View {
         } message: {
             Text("timer.save.message")
         }
-        .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+        .alert("Error", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
             Button("OK") { viewModel.errorMessage = nil }
         } message: {
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-            }
+            Text(viewModel.errorMessage ?? "")
         }
     }
     
@@ -251,6 +258,7 @@ enum TimerState {
 }
 
 // MARK: - Timer View Model
+@MainActor
 class TimerViewModel: ObservableObject {
     @Published var currentDuration: TimeInterval = 0
     @Published var timerState: TimerState = .stopped
@@ -258,8 +266,7 @@ class TimerViewModel: ObservableObject {
     @Published var showingSaveConfirmation = false
     @Published var errorMessage: String?
     
-    private let activity: Activity
-    private let viewContext: NSManagedObjectContext
+    let viewContext: NSManagedObjectContext
     private var timer: Timer?
     private var startTime: Date?
     private var pausedDuration: TimeInterval = 0
@@ -341,13 +348,12 @@ class TimerViewModel: ObservableObject {
 
             return true
         } catch {
-            AppLogger.error("Error saving timer session: (error)")
+            AppLogger.error("Error saving timer session: \(error)")
             errorMessage = error.localizedDescription
             return false
         }
     }
-        
-    }
+    
     
     func discardSession() {
         currentDuration = 0

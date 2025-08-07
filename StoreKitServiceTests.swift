@@ -41,7 +41,7 @@ final class StoreKitServiceTests: XCTestCase {
         // Given
         let currentCount = 10
         // Simulate having unlimited activities
-        UserDefaults.standard.set(true, forKey: "hasUnlimitedActivities")
+        UserDefaults.standard.set(true, forKey: DefaultsKeys.hasUnlimitedActivities)
         storeKitService.purchasedProductIDs.insert("com.intrahabits.unlimited_activities")
         
         // When
@@ -51,7 +51,7 @@ final class StoreKitServiceTests: XCTestCase {
         XCTAssertTrue(canAdd, "Should be able to add more activities with unlimited purchase")
         
         // Cleanup
-        UserDefaults.standard.removeObject(forKey: "hasUnlimitedActivities")
+        UserDefaults.standard.removeObject(forKey: DefaultsKeys.hasUnlimitedActivities)
         storeKitService.purchasedProductIDs.removeAll()
     }
     

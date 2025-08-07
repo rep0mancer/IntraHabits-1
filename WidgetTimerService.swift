@@ -6,7 +6,7 @@ class WidgetTimerService: ObservableObject {
     static let shared = WidgetTimerService()
     
     private let userDefaults: UserDefaults
-    private let appGroupIdentifier = "group.com.intrahabits.shared"
+    private let appGroupIdentifier = DefaultsKeys.appGroupIdentifier
     private(set) var isEnabled = true
     
     private var timerStates: [String: WidgetTimerState] = [:]
@@ -127,7 +127,7 @@ class WidgetTimerService: ObservableObject {
     
     // MARK: - Persistence
     private func loadTimerStates() {
-        guard let data = userDefaults.data(forKey: "widget_timer_states") else {
+        guard let data = userDefaults.data(forKey: DefaultsKeys.widgetTimerStates) else {
             return
         }
 
@@ -161,7 +161,7 @@ class WidgetTimerService: ObservableObject {
         }
         
         if let encoded = try? JSONEncoder().encode(data) {
-            userDefaults.set(encoded, forKey: "widget_timer_states")
+            userDefaults.set(encoded, forKey: DefaultsKeys.widgetTimerStates)
         }
     }
     

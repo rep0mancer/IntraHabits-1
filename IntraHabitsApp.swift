@@ -87,7 +87,7 @@ struct IntraHabitsApp: App {
         do {
             try BGTaskScheduler.shared.submit(request)
         } catch {
-            print("Could not schedule app refresh: \(error)")
+            AppLogger.error("Could not schedule app refresh: \(error)")
         }
     }
 

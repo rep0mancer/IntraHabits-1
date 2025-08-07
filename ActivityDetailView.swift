@@ -67,13 +67,9 @@ struct ActivityDetailView: View {
         } message: {
             Text("activity.delete.confirmation.message")
         }
-        .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+        .alert("Error", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
             Button("OK") { viewModel.errorMessage = nil }
-        } message: {
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-            }
-        }
+        } message: { Text(viewModel.errorMessage ?? "") }
     }
     
     // MARK: - Header Section
@@ -316,6 +312,7 @@ struct SessionRowView: View {
 }
 
 // MARK: - Activity Detail View Model
+@MainActor
 class ActivityDetailViewModel: ObservableObject {
     @Published var todaysFormattedValue: String = "0"
     @Published var weeklyFormattedValue: String = "0"

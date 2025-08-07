@@ -2,6 +2,12 @@ import Foundation
 import StoreKit
 import Combine
 
+struct DefaultsKeys {
+    static let hasUnlimitedActivities = "hasUnlimitedActivities"
+    static let widgetTimerStates = "widget_timer_states"
+    static let appGroupIdentifier = "group.com.intrahabits.shared"
+}
+
 @MainActor
 class StoreKitService: ObservableObject {
     
@@ -134,7 +140,7 @@ class StoreKitService: ObservableObject {
         self.purchasedProductIDs = purchasedProducts
         
         // Update UserDefaults for quick access
-        UserDefaults.standard.set(hasUnlimitedActivities, forKey: "hasUnlimitedActivities")
+        UserDefaults.standard.set(hasUnlimitedActivities, forKey: DefaultsKeys.hasUnlimitedActivities)
     }
     
     // MARK: - Transaction Listening

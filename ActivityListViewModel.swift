@@ -2,6 +2,7 @@ import Foundation
 import CoreData
 import Combine
 
+@MainActor
 final class ActivityListViewModel: ObservableObject {
     @Published var activities: [Activity] = []
     @Published var cardViewModels: [UUID: ActivityCardViewModel] = [:]
@@ -65,6 +66,7 @@ final class ActivityListViewModel: ObservableObject {
     }
 }
 
+@MainActor
 class ActivityCardViewModel: ObservableObject {
     @Published var todayCount: Int = 0
     @Published var formattedDuration: String = "0min"

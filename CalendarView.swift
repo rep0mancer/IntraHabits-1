@@ -351,6 +351,7 @@ struct CalendarSessionRowView: View {
 }
 
 // MARK: - Calendar View Model
+@MainActor
 class CalendarViewModel: ObservableObject {
     @Published var selectedDateSessions: [ActivitySession] = []
     @Published var monthSessions: [ActivitySession] = []

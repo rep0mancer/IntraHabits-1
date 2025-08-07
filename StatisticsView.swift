@@ -459,6 +459,7 @@ struct StreakData {
 }
 
 // MARK: - Statistics View Model
+@MainActor
 class StatisticsViewModel: ObservableObject {
     @Published var totalSessions = 0
     @Published var totalTimeFormatted = "0m"
