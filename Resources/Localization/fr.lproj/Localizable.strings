@@ -1,0 +1,72 @@
+/* À REVOIR: traductions automatiques */
+"home.title" = "Vos activités";
+"home.empty.title" = "Aucune activité";
+"home.empty.subtitle" = "Touchez ‘Ajouter une activité’ pour commencer";
+
+"activity.add.title" = "Ajouter une activité";
+"activity.add.name.title" = "Nom :";
+"activity.add.name.placeholder" = "Saisir le nom de l’activité";
+"activity.add.type.title" = "Type :";
+"activity.add.color.title" = "Couleur :";
+"activity.add.create" = "Ajouter l’activité";
+
+"activity.type.numeric" = "Numérique";
+"activity.type.timer" = "Minuteur";
+
+"timer.todays_total" = "Total du jour";
+"timer.save.title" = "Enregistrer la session";
+"timer.save.message" = "Voulez-vous enregistrer cette session de minuterie ?";
+"timer.save.save" = "Enregistrer";
+"timer.state.stopped" = "Arrêté";
+"timer.state.running" = "En cours";
+"timer.state.paused" = "En pause";
+
+"statistics.title" = "Statistiques";
+"statistics.activity_breakdown" = "Répartition des activités";
+"statistics.progress_over_time" = "Progression dans le temps";
+"statistics.daily_activity" = "Activité quotidienne";
+"statistics.streaks" = "Séries";
+"statistics.streak.current" = "Actuelle";
+"statistics.streak.best" = "Meilleure";
+
+"settings.title" = "Réglages"; /* TODO: vérifier vs. Paramètres */
+"settings.data.title" = "Données";
+"settings.general.title" = "Général";
+"settings.about.title" = "À propos";
+"settings.reset.confirmation.title" = "Réinitialiser toutes les données";
+"settings.reset.confirmation.message" = "Cela supprimera définitivement toutes vos activités et sessions.";
+"settings.reset.final.title" = "Confirmer la réinitialisation";
+"settings.reset.final.message" = "Cette action est irréversible.";
+
+"paywall.title" = "Passer à Premium";
+"paywall.headline" = "Débloquez des activités illimitées";
+"paywall.subheadline" = "Suivez autant d’habitudes que vous voulez";
+"paywall.one_time_purchase" = "Achat unique";
+"paywall.purchase_button" = "Mettre à niveau";
+"paywall.restore_purchases" = "Restaurer les achats";
+"paywall.purchase.success.title" = "Achat réussi";
+"paywall.purchase.success.message" = "Merci pour votre achat ! Vous avez maintenant des activités illimitées.";
+"paywall.purchase.error.title" = "Erreur d’achat";
+
+"sync.sync_status" = "État de la synchronisation";
+"sync.manual_sync" = "Synchroniser maintenant";
+"sync.status.idle" = "Prêt";
+"sync.status.syncing" = "Synchronisation…";
+"sync.status.completed" = "À jour";
+"sync.status.failed" = "Échec";
+
+"common.cancel" = "Annuler";
+"common.close" = "Fermer";
+"common.save" = "Enregistrer";
+"common.ok" = "OK";
+"common.error" = "Erreur";
+"common.loading" = "Chargement…";
+"common.unknown_error" = "Erreur inconnue";
+
+"validation.activity.name_empty" = "Le nom de l’activité ne peut pas être vide";
+"validation.activity.invalid_type" = "Type d’activité invalide";
+"validation.activity.invalid_color" = "Valeur de couleur invalide";
+"validation.activity.color_required" = "Une couleur d’activité doit être sélectionnée";
+
+"onboarding.icloud.sign_in_prompt" = "Veuillez vous connecter à iCloud dans Réglages";
+"onboarding.open_settings" = "Ouvrir Réglages";

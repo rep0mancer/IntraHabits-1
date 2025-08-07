@@ -44,8 +44,8 @@ struct AddActivityView: View {
                 }
             }
         }
-        .alert("Error", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
-            Button("OK") { viewModel.errorMessage = nil }
+        .alert("common.error", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
+            Button("common.ok") { viewModel.errorMessage = nil }
         } message: { Text(viewModel.errorMessage ?? "") }
     }
     
@@ -66,6 +66,7 @@ struct AddActivityView: View {
                         .stroke(DesignSystem.Colors.systemGray4, lineWidth: 1)
                 )
                 .submitLabel(.done)
+                .accessibilityIdentifier("activityName")
         }
     }
     
@@ -176,6 +177,7 @@ struct AddActivityView: View {
             .disabled(!viewModel.isFormValid || viewModel.isLoading)
             .padding(.horizontal, DesignSystem.Spacing.md)
             .padding(.vertical, DesignSystem.Spacing.md)
+            .accessibilityIdentifier("saveActivity")
         }
         .background(DesignSystem.Colors.background)
     }

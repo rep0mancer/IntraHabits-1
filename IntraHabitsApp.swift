@@ -23,15 +23,15 @@ struct IntraHabitsApp: App {
                 .environmentObject(AppDependencies.shared.syncController)
                 .alert(isPresented: $errorHandler.showingAlert) {
                     Alert(
-                        title: Text("Error"),
-                        message: Text(errorHandler.currentError?.localizedDescription ?? "Unknown error"),
-                        dismissButton: .default(Text("OK"))
+                        title: Text("common.error"),
+                        message: Text(errorHandler.currentError?.localizedDescription ?? NSLocalizedString("common.unknown_error", comment: "")),
+                        dismissButton: .default(Text("common.ok"))
                     )
                 }
-                .alert("Persistence Error", isPresented: Binding(get: { persistenceError != nil }, set: { _ in persistenceError = nil })) {
-                    Button("OK", role: .cancel) {}
+                .alert("persistence.error.title", isPresented: Binding(get: { persistenceError != nil }, set: { _ in persistenceError = nil })) {
+                    Button("common.ok", role: .cancel) {}
                 } message: {
-                    Text(persistenceError?.localizedDescription ?? "Unknown error")
+                    Text(persistenceError?.localizedDescription ?? NSLocalizedString("common.unknown_error", comment: ""))
                 }
         }
         .onChange(of: scenePhase) { newPhase in

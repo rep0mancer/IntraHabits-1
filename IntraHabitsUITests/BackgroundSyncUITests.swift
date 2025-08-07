@@ -5,14 +5,16 @@ final class BackgroundSyncUITests: XCTestCase {
         continueAfterFailure = false
     }
     
-    func testBackgroundSyncScheduling() throws {
-        throw XCTSkip("UI test pending: requires BGTaskScheduler hooks and identifiers. Wire target in Xcode.")
-        // Skeleton for future wiring:
-        // let app = XCUIApplication()
-        // app.launch()
-        // app.tabBars.buttons["Settings"].tap()
-        // app.cells["openSyncSettings"].tap()
-        // app.buttons["triggerManualSync"].tap()
-        // XCTAssertTrue(app.staticTexts["lastSyncDate"].exists)
+    func testManualSyncButtonExists() throws {
+        let app = XCUIApplication()
+        app.launch()
+
+        // Open settings from home
+        app.buttons["settingsButton"].tap()
+        
+        // Expect a manual sync trigger inside sync settings screen reachable from Settings
+        // If a dedicated Sync screen exists, open it; otherwise assert button exists in Settings
+        let trigger = app.buttons["triggerManualSync"]
+        XCTAssertTrue(trigger.waitForExistence(timeout: 5))
     }
 }

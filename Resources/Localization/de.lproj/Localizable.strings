@@ -1,0 +1,72 @@
+/* TODO: Review translations */
+"home.title" = "Deine Aktivitäten";
+"home.empty.title" = "Noch keine Aktivitäten";
+"home.empty.subtitle" = "Tippe auf ‚Aktivität hinzufügen‘, um zu starten";
+
+"activity.add.title" = "Aktivität hinzufügen";
+"activity.add.name.title" = "Name:";
+"activity.add.name.placeholder" = "Aktivitätsnamen eingeben";
+"activity.add.type.title" = "Typ:";
+"activity.add.color.title" = "Farbe:";
+"activity.add.create" = "Aktivität hinzufügen";
+
+"activity.type.numeric" = "Numerisch";
+"activity.type.timer" = "Timer";
+
+"timer.todays_total" = "Heutige Summe";
+"timer.save.title" = "Sitzung speichern";
+"timer.save.message" = "Diese Timersitzung speichern?";
+"timer.save.save" = "Speichern";
+"timer.state.stopped" = "Gestoppt";
+"timer.state.running" = "Läuft";
+"timer.state.paused" = "Pausiert";
+
+"statistics.title" = "Statistiken";
+"statistics.activity_breakdown" = "Aktivitätenübersicht";
+"statistics.progress_over_time" = "Fortschritt im Zeitverlauf";
+"statistics.daily_activity" = "Tägliche Aktivität";
+"statistics.streaks" = "Serien";
+"statistics.streak.current" = "Aktuell";
+"statistics.streak.best" = "Beste";
+
+"settings.title" = "Einstellungen";
+"settings.data.title" = "Daten";
+"settings.general.title" = "Allgemein";
+"settings.about.title" = "Info";
+"settings.reset.confirmation.title" = "Alle Daten zurücksetzen";
+"settings.reset.confirmation.message" = "Dies löscht dauerhaft alle Aktivitäten und Sitzungen.";
+"settings.reset.final.title" = "Zurücksetzen bestätigen";
+"settings.reset.final.message" = "Dieser Vorgang kann nicht rückgängig gemacht werden.";
+
+"paywall.title" = "Upgrade auf Premium";
+"paywall.headline" = "Unbegrenzte Aktivitäten freischalten";
+"paywall.subheadline" = "Beliebig viele Gewohnheiten verfolgen";
+"paywall.one_time_purchase" = "Einmalkauf";
+"paywall.purchase_button" = "Jetzt upgraden";
+"paywall.restore_purchases" = "Käufe wiederherstellen";
+"paywall.purchase.success.title" = "Kauf erfolgreich";
+"paywall.purchase.success.message" = "Danke für deinen Kauf! Du hast jetzt unbegrenzte Aktivitäten.";
+"paywall.purchase.error.title" = "Kauf Fehler"; /* TODO: verify tone */
+
+"sync.sync_status" = "Sync-Status";
+"sync.manual_sync" = "Jetzt synchronisieren";
+"sync.status.idle" = "Bereit";
+"sync.status.syncing" = "Synchronisiere…";
+"sync.status.completed" = "Aktuell";
+"sync.status.failed" = "Fehlgeschlagen";
+
+"common.cancel" = "Abbrechen";
+"common.close" = "Schließen";
+"common.save" = "Sichern"; /* TODO: prüfen vs. Speichern */
+"common.ok" = "OK";
+"common.error" = "Fehler";
+"common.loading" = "Laden…";
+"common.unknown_error" = "Unbekannter Fehler";
+
+"validation.activity.name_empty" = "Aktivitätsname darf nicht leer sein";
+"validation.activity.invalid_type" = "Ungültiger Aktivitätstyp";
+"validation.activity.invalid_color" = "Ungültiger Farbwert";
+"validation.activity.color_required" = "Aktivitätsfarbe muss ausgewählt werden";
+
+"onboarding.icloud.sign_in_prompt" = "Bitte in den iCloud-Einstellungen anmelden";
+"onboarding.open_settings" = "Einstellungen öffnen";

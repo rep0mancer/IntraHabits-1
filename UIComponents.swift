@@ -4,7 +4,7 @@ import SwiftUI
 struct LoadingView: View {
     let message: String
     
-    init(_ message: String = "Loading...") {
+    init(_ message: String = "common.loading") {
         self.message = message
     }
     
@@ -69,6 +69,7 @@ struct EmptyStateView: View {
             if let buttonTitle = buttonTitle, let buttonAction = buttonAction {
                 Button(action: buttonAction) {
                     Text(buttonTitle)
+                        .frame(minHeight: 44)
                 }
                 .buttonStyle(PrimaryButtonStyle())
                 .padding(.horizontal, DesignSystem.Spacing.md)

@@ -42,6 +42,13 @@ struct ActivityCard: View {
             // Ensure the internal view model is configured with the current activity and context
             viewModel.setActivity(activity, context: viewContext)
         }
+        .accessibleActivityCard(
+            name: activity.displayName,
+            type: activity.activityType.rawValue,
+            todayValue: viewModel.todaysFormattedValue,
+            isCompleted: viewModel.currentStreak > 0
+        )
+        .accessibilityIdentifier("activity_card_\(activity.id?.uuidString ?? "unknown")")
     }
     
     // MARK: - Activity Info Section
@@ -79,6 +86,7 @@ struct ActivityCard: View {
             Text(viewModel.todaysFormattedValue)
                 .font(DesignSystem.Typography.numberMedium)
                 .foregroundColor(activity.displayColor)
+                .accessibilityIdentifier("activity_todayValue_\(activity.id?.uuidString ?? "unknown")")
             
             // Streak Info
             if viewModel.currentStreak > 0 {
@@ -90,6 +98,7 @@ struct ActivityCard: View {
                     Text("\(viewModel.currentStreak)")
                         .font(DesignSystem.Typography.caption2)
                         .foregroundColor(.secondary)
+                        .accessibilityIdentifier("activity_streak_\(activity.id?.uuidString ?? "unknown")")
                 }
             }
         }
@@ -116,6 +125,8 @@ struct ActivityCard: View {
                 .cornerRadius(DesignSystem.CornerRadius.medium)
         }
         .hapticFeedback(.medium)
+        .accessibilityLabel("accessibility.timer.button.start")
+        .accessibilityIdentifier("timerStart")
     }
     
     private var numericActionButton: some View {
@@ -143,6 +154,8 @@ struct ActivityCard: View {
         .onLongPressGesture {
             showingStepSelector = true
         }
+        .accessibilityIdentifier("incrementButton")
+        .accessibilityHint(NSLocalizedString("accessibility.activity.hint.numeric", comment: ""))
     }
     
     // MARK: - Step Selector Action Sheet

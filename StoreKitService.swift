@@ -49,8 +49,8 @@ class StoreKitService: ObservableObject {
             self.products = products
             
         } catch {
-            errorMessage = "Failed to load products: \(error.localizedDescription)"
-            AppLogger.error("Error loading products: \(error)")
+            errorMessage = NSLocalizedString("storekit.error.product_not_found", comment: "")
+            AppLogger.fault("Error loading products: \(error)")
         }
         
         isLoading = false
@@ -88,7 +88,7 @@ class StoreKitService: ObservableObject {
             }
             
         } catch {
-            errorMessage = "Purchase failed: \(error.localizedDescription)"
+            errorMessage = error.localizedDescription
             AppLogger.error("Purchase error: \(error)")
             return .failed(error)
         }
@@ -109,7 +109,7 @@ class StoreKitService: ObservableObject {
             }
             
         } catch {
-            errorMessage = "Restore failed: \(error.localizedDescription)"
+            errorMessage = error.localizedDescription
             AppLogger.error("Restore error: \(error)")
             return .failed(error)
         }
@@ -161,7 +161,6 @@ class StoreKitService: ObservableObject {
     }
     
     // MARK: - Verification
-    
     private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
         switch result {
         case .unverified:
@@ -232,7 +231,7 @@ class PurchaseManager: ObservableObject {
     
     func purchaseUnlimitedActivities() async {
         guard let product = storeKitService.unlimitedActivitiesProduct else {
-            errorMessage = "Product not available"
+            errorMessage = NSLocalizedString("storekit.error.product_not_found", comment: "")
             showingPurchaseError = true
             return
         }
@@ -245,16 +244,15 @@ class PurchaseManager: ObservableObject {
         case .success:
             showingPurchaseSuccess = true
         case .userCancelled:
-            // No action needed
             break
         case .pending:
-            errorMessage = "Purchase is pending approval"
+            errorMessage = NSLocalizedString("storekit.error.purchase_not_allowed", comment: "")
             showingPurchaseError = true
         case .failed(let error):
             errorMessage = error.localizedDescription
             showingPurchaseError = true
         case .unknown:
-            errorMessage = "Unknown purchase result"
+            errorMessage = NSLocalizedString("common.unknown_error", comment: "")
             showingPurchaseError = true
         }
         
@@ -270,7 +268,7 @@ class PurchaseManager: ObservableObject {
         case .success:
             showingPurchaseSuccess = true
         case .nothingToRestore:
-            errorMessage = "No previous purchases found"
+            errorMessage = NSLocalizedString("common.unknown_error", comment: "")
             showingPurchaseError = true
         case .failed(let error):
             errorMessage = error.localizedDescription

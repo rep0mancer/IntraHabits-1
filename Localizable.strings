@@ -231,10 +231,25 @@
 "common.done" = "Done";
 "common.ok" = "OK";
 "common.error" = "Error";
+"common.loading" = "Loading...";
+"common.unknown_error" = "Unknown error";
 
 /* Time Units */
 "time.minutes" = "min";
 "time.hours" = "h";
 "time.days" = "days";
 "time.day" = "day";
+
+/* Validation */
+"validation.activity.name_empty" = "Activity name cannot be empty";
+"validation.activity.invalid_type" = "Invalid activity type";
+"validation.activity.invalid_color" = "Invalid color value";
+"validation.activity.color_required" = "Activity color must be selected";
+
+/* Onboarding */
+"onboarding.icloud.sign_in_prompt" = "Please sign in to iCloud in Settings";
+"onboarding.open_settings" = "Open Settings";
+
+/* Persistence */
+"persistence.error.title" = "Persistence Error";
 

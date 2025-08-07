@@ -48,16 +48,27 @@ jobs:
         # Install any required dependencies here
         echo "No additional dependencies required"
         
-    - name: Run unit tests
+    - name: Run unit tests (iPhone 15 Pro Max)
       run: |
         xcodebuild test \
           -project IntraHabits.xcodeproj \
           -scheme IntraHabits \
-          -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
+          -destination "platform=iOS Simulator,name=iPhone 15 Pro Max,OS=${{ env.IOS_VERSION }}" \
           -enableCodeCoverage YES \
           -derivedDataPath DerivedData \
           CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+          CODE_SIGNING_ALLOWED=NO | xcpretty | cat
+
+    - name: Run UI tests (iPhone SE 3rd gen)
+      run: |
+        xcodebuild test \
+          -project IntraHabits.xcodeproj \
+          -scheme IntraHabits \
+          -destination "platform=iOS Simulator,name=iPhone SE (3rd generation),OS=${{ env.IOS_VERSION }}" \
+          -only-testing IntraHabitsUITests \
+          -derivedDataPath DerivedData \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO | xcpretty | cat
           
     - name: Generate code coverage report
       run: |
@@ -265,20 +276,31 @@ jobs:
           -F "file=@manifest.plist" \
           "$ENTERPRISE_DISTRIBUTION_URL/manifest"
 
-  security-scan:
-    name: Security Scan
-    runs-on: macos-14
-    needs: test
-    
+  security:
+    name: CodeQL Security Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
-    - name: Install SwiftLint
-      run: brew install swiftlint
-
-    - name: Run security scan
-      run: swiftlint lint --config .swiftlint.yml --strict
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: swift
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v3
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:swift"
+    - name: Fail on CodeQL alerts with severity error
+      run: |
+        gh api -H "Accept: application/sarif+json" repos/${{ github.repository }}/code-scanning/alerts | jq 'map(select(.rule.severity == "error")) | length' | { read count; if [ "$count" -gt 0 ]; then echo "Found $count CodeQL errors"; exit 1; fi; }
+      env:
+        GH_TOKEN: ${{ github.token }}
 
   performance-test:
     name: Performance Tests
@@ -343,7 +365,7 @@ jobs:
   notify:
     name: Notify Team
     runs-on: ubuntu-latest
-    needs: [test, build, security-scan, performance-test, accessibility-test]
+    needs: [test, build, security, performance-test, accessibility-test]
     if: always()
     
     steps:

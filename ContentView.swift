@@ -64,6 +64,7 @@ struct ContentView: View {
                         .foregroundColor(.secondary)
                 }
                 .hapticFeedback(.light)
+                .accessibilityIdentifier("calendarButton")
                 
                 // Settings Button
                 Button(action: { coordinator.presentSettings() }) {
@@ -72,6 +73,7 @@ struct ContentView: View {
                         .foregroundColor(.secondary)
                 }
                 .hapticFeedback(.light)
+                .accessibilityIdentifier("settingsButton")
             }
         }
         .padding(.horizontal, DesignSystem.Spacing.md)
@@ -97,6 +99,7 @@ struct ContentView: View {
             buttonTitle: "home.empty.button",
             buttonAction: { coordinator.presentAddActivity() }
         )
+        .accessibilityIdentifier("emptyState")
     }
     
     // MARK: - Activity List View
@@ -133,6 +136,7 @@ struct ContentView: View {
                 .padding(.horizontal, DesignSystem.Spacing.md)
                 .padding(.top, DesignSystem.Spacing.md)
             }
+            .accessibilityIdentifier("activityList")
             
             // Floating Action Button
             FloatingActionButton(
@@ -141,6 +145,7 @@ struct ContentView: View {
             )
             .padding(.trailing, DesignSystem.Spacing.md)
             .padding(.bottom, DesignSystem.Spacing.md)
+            .accessibilityIdentifier("addActivity")
         }
     }
     
