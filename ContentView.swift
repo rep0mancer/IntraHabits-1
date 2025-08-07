@@ -212,7 +212,7 @@ struct ContentView: View {
             HapticManager.notification(.success)
         } catch {
             // Handle the error appropriately
-            AppLogger.error("Failed to delete activity: \(error.localizedDescription)")
+            AppLogger.error("Failed to delete activity: \(error)")
         }
     }
 }
