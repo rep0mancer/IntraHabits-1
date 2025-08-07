@@ -200,6 +200,7 @@ struct SettingsView: View {
                         Task { await purchaseManager.restorePurchases() }
                     }
                 )
+                .accessibilityIdentifier("restorePurchases")
                 
                 Divider()
                     .padding(.leading, 44)

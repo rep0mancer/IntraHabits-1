@@ -12,7 +12,10 @@ extension Activity {
     /// ``numericValue`` property of associated ``ActivitySession`` objects
     /// constrained to a date range.  It returns the total as a ``Double``.
     private func totalValue(for dateRange: ClosedRange<Date>) -> Double {
-        guard let context = self.managedObjectContext else { return 0.0 }
+        guard let context = self.managedObjectContext else {
+            AppLogger.fault("Activity has no managedObjectContext when computing totalValue")
+            return 0.0
+        }
         let request = NSFetchRequest<NSDictionary>(entityName: "ActivitySession")
         request.resultType = .dictionaryResultType
 
@@ -31,7 +34,7 @@ extension Activity {
             let result = try context.fetch(request)
             return (result.first?["totalValue"] as? Double) ?? 0.0
         } catch {
-            AppLogger.error("Failed to perform aggregation fetch: \(error)")
+            AppLogger.fault("Failed to perform aggregation fetch: \(error)")
             return 0.0
         }
     }
@@ -41,7 +44,10 @@ extension Activity {
     func todaysTotal() -> Double {
         let calendar = Calendar.current
         let todayStart = calendar.startOfDay(for: Date())
-        guard let todayEnd = calendar.date(byAdding: .day, value: 1, to: todayStart) else { return 0 }
+        guard let todayEnd = calendar.date(byAdding: .day, value: 1, to: todayStart) else {
+            AppLogger.fault("Could not compute end of day date")
+            return 0
+        }
         return totalValue(for: todayStart...todayEnd)
     }
 
@@ -53,14 +59,20 @@ extension Activity {
         let calendar = Calendar.current
         let now = Date()
         let safeNow = calendar.date(bySettingHour: 12, minute: 0, second: 0, of: now) ?? now
-        guard let weekAgo = calendar.date(byAdding: .weekOfYear, value: -1, to: safeNow) else { return 0 }
+        guard let weekAgo = calendar.date(byAdding: .weekOfYear, value: -1, to: safeNow) else {
+            AppLogger.fault("Could not compute date one week ago")
+            return 0
+        }
         return totalValue(for: weekAgo...now)
     }
 
     /// Total for the previous month.  Calculates the date one month ago and
     /// defers to ``totalValue(for:)``.
     func monthlyTotal() -> Double {
-        guard let monthAgo = Calendar.current.date(byAdding: .month, value: -1, to: Date()) else { return 0 }
+        guard let monthAgo = Calendar.current.date(byAdding: .month, value: -1, to: Date()) else {
+            AppLogger.fault("Could not compute date one month ago")
+            return 0
+        }
         return totalValue(for: monthAgo...Date())
     }
 }
@@ -103,18 +115,18 @@ extension Activity {
         var errors: [String] = []
 
         let trimmedName = (name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmedName.isEmpty { errors.append("Activity name cannot be empty") }
+        if trimmedName.isEmpty { errors.append(NSLocalizedString("validation.activity.name_empty", comment: "")) }
 
         if let rawType = type, ActivityType(rawValue: rawType) == nil {
-            errors.append("Invalid activity type")
+            errors.append(NSLocalizedString("validation.activity.invalid_type", comment: ""))
         }
 
         if let hex = color {
             let trimmed = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
             let isValidHex = CharacterSet(charactersIn: trimmed).isSubset(of: CharacterSet(charactersIn: "0123456789ABCDEFabcdef")) && (trimmed.count == 6 || trimmed.count == 8 || trimmed.count == 3)
-            if !isValidHex { errors.append("Invalid color value") }
+            if !isValidHex { errors.append(NSLocalizedString("validation.activity.invalid_color", comment: "")) }
         } else {
-            errors.append("Activity color must be selected")
+            errors.append(NSLocalizedString("validation.activity.color_required", comment: ""))
         }
 
         return ValidationResult(isValid: errors.isEmpty, errors: errors)
@@ -125,7 +137,10 @@ extension Activity {
 extension Activity {
     /// Returns the current and longest streak lengths in days based on sessions associated with this activity.
     static func calculateStreaks(for activity: Activity) -> (current: Int, longest: Int) {
-        guard let context = activity.managedObjectContext else { return (0, 0) }
+        guard let context = activity.managedObjectContext else {
+            AppLogger.fault("Activity has no managedObjectContext when calculating streaks")
+            return (0, 0)
+        }
 
         let request: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
         request.predicate = NSPredicate(format: "activity == %@", activity)
@@ -179,7 +194,7 @@ extension Activity {
 
             return (current, longest)
         } catch {
-            AppLogger.error("Failed calculating streaks: \(error)")
+            AppLogger.fault("Failed calculating streaks: \(error)")
             return (0, 0)
         }
     }

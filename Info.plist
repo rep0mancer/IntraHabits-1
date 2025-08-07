@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<string>en</string>
 	<key>CFBundleDisplayName</key>
 	<string>IntraHabits</string>
 	<key>CFBundleExecutable</key>
@@ -40,6 +40,11 @@
 </array>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>We use notifications to remind you about your habits and ongoing timers.</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>de</string>
+		<string>fr</string>
+	</array>
 </dict>
 </plist>
 

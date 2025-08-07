@@ -173,6 +173,7 @@ struct PaywallView: View {
         }
         .buttonStyle(PrimaryButtonStyle())
         .disabled(storeKitService.isLoading || purchaseManager.isPurchasing || storeKitService.unlimitedActivitiesProduct == nil)
+        .accessibilityIdentifier("purchaseButton")
     }
     
     // MARK: - Restore Button
@@ -193,6 +194,7 @@ struct PaywallView: View {
         }
         .buttonStyle(SecondaryButtonStyle())
         .disabled(purchaseManager.isRestoring)
+        .accessibilityIdentifier("restorePurchasesButton")
     }
     
     // MARK: - Legal Section

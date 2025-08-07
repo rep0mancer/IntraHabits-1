@@ -47,6 +47,7 @@ struct SyncStatusView: View {
             }) {
                 Text("sync.manual_sync")
             }
+            .accessibilityIdentifier("triggerManualSync")
         }
         .onAppear {
             // Kick off an account status check when the view appears.

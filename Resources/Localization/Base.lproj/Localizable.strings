@@ -1,0 +1,2 @@
+/* Base English localizations are sourced from the root Localizable.strings for build simplicity. This file intentionally mirrors those keys to satisfy Xcode localization structure. */
+/* You may choose to remove duplication and use a strings dict in future. */

@@ -18,7 +18,7 @@ struct CustomSegmentedControl<T: Hashable>: View {
                         .fontWeight(.medium)
                         .foregroundColor(selection == option ? .white : DesignSystem.Colors.primary)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 36)
+                        .frame(height: 44)
                         .background(
                             selection == option ? 
                             DesignSystem.Colors.primary : 
@@ -30,6 +30,8 @@ struct CustomSegmentedControl<T: Hashable>: View {
                         )
                 }
                 .hapticFeedback(.light)
+                .accessibilityLabel(optionLabels[option] ?? "")
+                .accessibilityAddTraits(.isButton)
             }
         }
         .background(DesignSystem.Colors.secondaryBackground)

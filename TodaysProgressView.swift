@@ -37,7 +37,7 @@ struct TodaysProgressView: View {
     private var headerView: some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text("Today's Progress")
+                Text("widget.progress.title")
                     .font(.system(.caption, design: .rounded, weight: .semibold))
                     .foregroundColor(.primary)
                 
@@ -115,7 +115,7 @@ struct TodaysProgressView: View {
                     .font(.system(.caption, design: .rounded, weight: .bold))
                     .foregroundColor(WidgetConfiguration.primaryColor)
                 
-                Text("Sessions")
+                Text("widget.progress.sessions")
                     .font(.caption2)
                     .foregroundColor(.secondary)
             }
@@ -129,7 +129,7 @@ struct TodaysProgressView: View {
                         .font(.system(.caption, design: .rounded, weight: .bold))
                         .foregroundColor(WidgetConfiguration.tealColor)
                     
-                    Text("Total Time")
+                    Text("widget.progress.total_time")
                         .font(.caption2)
                         .foregroundColor(.secondary)
                 }
@@ -143,12 +143,12 @@ struct TodaysProgressView: View {
                 .font(.title2)
                 .foregroundColor(WidgetConfiguration.primaryColor)
             
-            Text("No Progress Today")
+            Text("widget.progress.no_progress")
                 .font(.caption)
                 .foregroundColor(.primary)
                 .multilineTextAlignment(.center)
             
-            Text("Start tracking your activities")
+            Text("widget.progress.start_tracking")
                 .font(.caption2)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)

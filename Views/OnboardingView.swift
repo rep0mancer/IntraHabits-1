@@ -4,13 +4,15 @@ struct OnboardingView: View {
     var body: some View {
         VStack(spacing: 20) {
             Spacer()
-            Text("Please sign in to iCloud in Settings")
+            Text("onboarding.icloud.sign_in_prompt")
                 .multilineTextAlignment(.center)
-            Button("Open Settings") {
+                .accessibilityIdentifier("onboardingIcloudPrompt")
+            Button("onboarding.open_settings") {
                 if let url = URL(string: UIApplication.openSettingsURLString) {
                     UIApplication.shared.open(url)
                 }
             }
+            .accessibilityIdentifier("onboardingOpenSettings")
             Spacer()
         }
         .padding()

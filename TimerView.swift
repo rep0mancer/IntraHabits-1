@@ -27,6 +27,12 @@ struct TimerView: View {
                 
                 // Timer Display
                 timerDisplay
+                    .accessibleTimer(
+                        activityName: activity.displayName,
+                        currentTime: viewModel.formattedTime,
+                        state: viewModel.timerState
+                    )
+                    .accessibilityIdentifier("timerDisplay")
                 
                 // Today's Total
                 todaysTotalSection
@@ -65,8 +71,8 @@ struct TimerView: View {
         } message: {
             Text("timer.save.message")
         }
-        .alert("Error", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
-            Button("OK") { viewModel.errorMessage = nil }
+        .alert("common.error", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
+            Button("common.ok") { viewModel.errorMessage = nil }
         } message: {
             Text(viewModel.errorMessage ?? "")
         }
@@ -89,6 +95,7 @@ struct TimerView: View {
                     .background(DesignSystem.Colors.secondaryBackground)
                     .clipShape(Circle())
             }
+            .accessibilityIdentifier("timerClose")
             
             Spacer()
             
@@ -96,6 +103,7 @@ struct TimerView: View {
                 .font(DesignSystem.Typography.title2)
                 .foregroundColor(.primary)
                 .multilineTextAlignment(.center)
+                .accessibilityIdentifier("timerTitle")
             
             Spacer()
             
@@ -133,6 +141,7 @@ struct TimerView: View {
                 Text(stateText)
                     .font(DesignSystem.Typography.subheadline)
                     .foregroundColor(.secondary)
+                    .accessibilityIdentifier("timerStateText")
             }
         }
     }
@@ -148,6 +157,7 @@ struct TimerView: View {
                 .font(DesignSystem.Typography.title3)
                 .foregroundColor(.primary)
                 .monospacedDigit()
+                .accessibilityIdentifier("timerTodaysTotal")
         }
         .padding(DesignSystem.Spacing.md)
         .background(DesignSystem.Colors.secondaryBackground)
@@ -172,6 +182,8 @@ struct TimerView: View {
                     .background(DesignSystem.Colors.systemGray)
                     .clipShape(Circle())
             }
+            .accessibilityLabel("accessibility.timer.button.stop")
+            .accessibilityIdentifier("timerStop")
             .disabled(viewModel.currentDuration == 0)
             .opacity(viewModel.currentDuration == 0 ? 0.5 : 1.0)
             
@@ -198,6 +210,8 @@ struct TimerView: View {
                     .scaleEffect(viewModel.timerState == .running ? 1.1 : 1.0)
                     .animation(.easeInOut(duration: 0.2), value: viewModel.timerState)
             }
+            .accessibilityLabel(AccessibilityHelper.timerButtonAccessibilityLabel(state: viewModel.timerState))
+            .accessibilityIdentifier("timerPlayPause")
             // Save Button
             Button(action: {
                 if viewModel.saveSession() {
@@ -212,6 +226,8 @@ struct TimerView: View {
                     .background(Color.green)
                     .clipShape(Circle())
             }
+            .accessibilityLabel("common.save")
+            .accessibilityIdentifier("timerSave")
             .disabled(viewModel.currentDuration == 0)
             .opacity(viewModel.currentDuration == 0 ? 0.5 : 1.0)
         }

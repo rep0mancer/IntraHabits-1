@@ -6,17 +6,41 @@ final class TimerLifecycleUITests: XCTestCase {
     }
     
     func testTimerStartPauseResumeStopLifecycle() throws {
-        throw XCTSkip("UI test pending: add accessibility identifiers and wire UITest target in Xcode.")
-        // Example skeleton once wired:
-        // let app = XCUIApplication()
-        // app.launch()
-        // app.buttons["addActivity"].tap()
-        // app.textFields["activityName"].typeText("UITest Timer")
-        // app.buttons["saveActivity"].tap()
-        // app.cells["activity_UITest Timer"].tap()
-        // app.buttons["timerStart"].tap()
-        // app.buttons["timerPause"].tap()
-        // app.buttons["timerResume"].tap()
-        // app.buttons["timerStop"].tap()
+        let app = XCUIApplication()
+        app.launch()
+
+        // If empty state, add a timer activity via FAB
+        if app.otherElements["emptyState"].exists {
+            app.buttons["addActivity"].tap()
+            let nameField = app.textFields["activityName"]
+            XCTAssertTrue(nameField.waitForExistence(timeout: 5))
+            nameField.tap()
+            nameField.typeText("UITest Timer")
+
+            app.buttons.matching(identifier: "saveActivity").firstMatch.tap()
+        }
+
+        // Tap first activity card or specific one if exists
+        let list = app.otherElements["activityList"]
+        XCTAssertTrue(list.waitForExistence(timeout: 10))
+        app.buttons["timerStart"].firstMatch.tap()
+
+        // Timer screen
+        let playPause = app.buttons["timerPlayPause"]
+        XCTAssertTrue(playPause.waitForExistence(timeout: 5))
+
+        // Start
+        playPause.tap()
+        XCTAssertTrue(app.staticTexts["timerStateText"].waitForExistence(timeout: 3))
+
+        // Pause
+        playPause.tap()
+
+        // Resume
+        playPause.tap()
+
+        // Stop -> Save
+        app.buttons["timerStop"].tap()
+        app.buttons["timerSave"].tap()
     }
 }
