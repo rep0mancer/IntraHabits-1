@@ -135,8 +135,8 @@ public actor SyncEngine {
             // TODO: Process changedRecords and deletedIDs into Core Data.
             // For the purposes of this refactor we simply log the results to
             // demonstrate that delta sync is working.
-            print("Changed records: \(changedRecords)")
-            print("Deleted record IDs: \(zoneChanges.recordDeletions.map { $0.recordID })")
+            AppLogger.info("Changed records: \(changedRecords)")
+            AppLogger.info("Deleted record IDs: \(zoneChanges.recordDeletions.map { $0.recordID })")
 
             // Persist the new zone token if one was provided by CloudKit.
             if let newZoneToken = zoneChanges.changeToken {

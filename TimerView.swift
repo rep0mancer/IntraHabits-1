@@ -56,12 +56,10 @@ struct TimerView: View {
         } message: {
             Text("timer.save.message")
         }
-        .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
+        .alert("Error", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
             Button("OK") { viewModel.errorMessage = nil }
         } message: {
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-            }
+            Text(viewModel.errorMessage ?? "")
         }
     }
     
@@ -251,6 +249,7 @@ enum TimerState {
 }
 
 // MARK: - Timer View Model
+@MainActor
 class TimerViewModel: ObservableObject {
     @Published var currentDuration: TimeInterval = 0
     @Published var timerState: TimerState = .stopped
@@ -341,13 +340,12 @@ class TimerViewModel: ObservableObject {
 
             return true
         } catch {
-            AppLogger.error("Error saving timer session: (error)")
+            AppLogger.error("Error saving timer session: \(error)")
             errorMessage = error.localizedDescription
             return false
         }
     }
-        
-    }
+    
     
     func discardSession() {
         currentDuration = 0

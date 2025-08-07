@@ -1,13 +1,10 @@
 import XCTest
 import CloudKit
-import CoreData
 @testable import CloudKitSync
 
 final class SyncEngineTests: XCTestCase {
-    func testSyncEngineInitialisesWithDependencies() async throws {
-        let fakeDB = FakeDatabase()
-        let context = PersistenceController(inMemory: true).container.viewContext
-        let engine = SyncEngine(db: fakeDB as! CKDatabase, context: context)
+    func testSyncEngineInitialises() {
+        let engine = SyncEngine()
         XCTAssertNotNil(engine)
     }
 

@@ -193,7 +193,7 @@ struct ContentView: View {
             try viewContext.save()
         } catch {
             // Handle the error appropriately, e.g., show an alert
-            print("Failed to reorder activities: \(error.localizedDescription)")
+            AppLogger.error("Failed to reorder activities: \(error.localizedDescription)")
         }
     }
     
@@ -212,7 +212,7 @@ struct ContentView: View {
             HapticManager.notification(.success)
         } catch {
             // Handle the error appropriately
-            print("Failed to delete activity: \(error.localizedDescription)")
+            AppLogger.error("Failed to delete activity: \(error.localizedDescription)")
         }
     }
 }
