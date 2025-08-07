@@ -183,7 +183,7 @@ struct SettingsView: View {
                 SettingsRow(
                     icon: "info.circle",
                     title: "settings.version.title",
-                    subtitle: "1.0.0",
+                    subtitle: "settings.version.subtitle",
                     showChevron: false,
                     action: { }
                 )
@@ -265,10 +265,38 @@ struct SettingsRow: View {
 }
 
 // MARK: - Settings View Model
+@MainActor
 class SettingsViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
-    @Published var successMessage: String?
+    
+    @Published var appVersion: String = ""
+    @Published var buildNumber: String = ""
+    @Published var iCloudStatus: String = ""
+    
+    init() {
+        loadAppInfo()
+    }
+    
+    func loadAppInfo() {
+        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? ""
+        appVersion = version
+        buildNumber = build
+    }
+    
+    func checkiCloudStatus(using controller: SyncController = AppDependencies.shared.syncController) async {
+        isLoading = true
+        let status = await controller.checkAccountStatus()
+        switch status {
+        case .available: iCloudStatus = "Available"
+        case .noAccount: iCloudStatus = "No Account"
+        case .restricted: iCloudStatus = "Restricted"
+        case .couldNotDetermine: iCloudStatus = "Unknown"
+        @unknown default: iCloudStatus = "Unknown"
+        }
+        isLoading = false
+    }
     
     private var viewContext: NSManagedObjectContext?
     
@@ -311,7 +339,7 @@ class SettingsViewModel: ObservableObject {
             }
             
             isLoading = false
-            successMessage = "Data exported successfully"
+            // successMessage = "Data exported successfully" // This line was removed from the new_code, so it's removed here.
             
         } catch {
             errorMessage = error.localizedDescription
@@ -337,7 +365,7 @@ class SettingsViewModel: ObservableObject {
             try context.save()
             
             isLoading = false
-            successMessage = "All data has been reset"
+            // successMessage = "All data has been reset" // This line was removed from the new_code, so it's removed here.
             
         } catch {
             errorMessage = error.localizedDescription

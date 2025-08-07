@@ -7,7 +7,7 @@ class WidgetDataService: ObservableObject {
     static let shared = WidgetDataService()
     
     private let containerName = "DataModel"
-    private let appGroupIdentifier = "group.com.intrahabits.shared"
+    private let appGroupIdentifier = DefaultsKeys.appGroupIdentifier
     
     // MARK: - Core Data Stack
     lazy var persistentContainer: NSPersistentContainer = {

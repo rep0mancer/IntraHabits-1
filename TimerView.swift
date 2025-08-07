@@ -40,6 +40,15 @@ struct TimerView: View {
             }
             .padding(DesignSystem.Spacing.lg)
         }
+        .onAppear {
+            // Recreate view model if environment context differs
+            // Note: We keep activity reference identical.
+            if viewContext != viewModel.viewContext {
+                let newVM = TimerViewModel(activity: activity, context: viewContext)
+                _viewModel.wrappedValue = newVM
+            }
+            viewModel.updateTodaysTotal()
+        }
         .onDisappear {
             viewModel.stopTimer()
         }
@@ -257,8 +266,7 @@ class TimerViewModel: ObservableObject {
     @Published var showingSaveConfirmation = false
     @Published var errorMessage: String?
     
-    private let activity: Activity
-    private let viewContext: NSManagedObjectContext
+    let viewContext: NSManagedObjectContext
     private var timer: Timer?
     private var startTime: Date?
     private var pausedDuration: TimeInterval = 0

@@ -44,15 +44,9 @@ struct AddActivityView: View {
                 }
             }
         }
-        .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
-            Button("OK") {
-                viewModel.errorMessage = nil
-            }
-        } message: {
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-            }
-        }
+        .alert("Error", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
+            Button("OK") { viewModel.errorMessage = nil }
+        } message: { Text(viewModel.errorMessage ?? "") }
     }
     
     // MARK: - Name Section
@@ -220,6 +214,7 @@ struct ColorPickerButton: View {
 }
 
 // MARK: - Enhanced Add Activity View Model
+@MainActor
 class AddActivityViewModel: ObservableObject {
     @Published var activityName = ""
     @Published var selectedType: ActivityType = .numeric
@@ -240,7 +235,6 @@ class AddActivityViewModel: ObservableObject {
         !activityName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
     
-    @MainActor
     func createActivity() async -> Bool {
         let context = viewContext
         guard isFormValid else { return false }
@@ -296,9 +290,7 @@ class AddActivityViewModel: ObservableObject {
             return true
             
        } catch {
-            DispatchQueue.main.async {
-                AppDependencies.shared.errorHandler.handle(error)
-            }
+            AppDependencies.shared.errorHandler.handle(error)
             isLoading = false
             return false
         }

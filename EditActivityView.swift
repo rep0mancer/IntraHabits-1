@@ -45,15 +45,9 @@ struct EditActivityView: View {
                 }
             }
         }
-        .alert("Error", isPresented: .constant(viewModel.errorMessage != nil)) {
-            Button("OK") {
-                viewModel.errorMessage = nil
-            }
-        } message: {
-            if let errorMessage = viewModel.errorMessage {
-                Text(errorMessage)
-            }
-        }
+        .alert("Error", isPresented: Binding(get: { viewModel.errorMessage != nil }, set: { if !$0 { viewModel.errorMessage = nil } })) {
+            Button("OK") { viewModel.errorMessage = nil }
+        } message: { Text(viewModel.errorMessage ?? "") }
     }
     
     // MARK: - Name Section
@@ -194,6 +188,7 @@ struct EditActivityView: View {
 }
 
 // MARK: - Edit Activity View Model
+@MainActor
 class EditActivityViewModel: ObservableObject {
     @Published var activityName = ""
     @Published var selectedType: ActivityType = .numeric
