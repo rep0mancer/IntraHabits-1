@@ -182,7 +182,7 @@ struct TimerView: View {
                     .background(DesignSystem.Colors.systemGray)
                     .clipShape(Circle())
             }
-            .accessibilityLabel("accessibility.timer.button.pause")
+            .accessibilityLabel("accessibility.timer.button.stop")
             .accessibilityIdentifier("timerStop")
             .disabled(viewModel.currentDuration == 0)
             .opacity(viewModel.currentDuration == 0 ? 0.5 : 1.0)
