@@ -21,7 +21,7 @@ struct OnboardingView_Previews: PreviewProvider {
     static var previews: some View {
         Group {
             OnboardingView().previewDisplayName("Light")
-            OnboardingView().preferredColorScheme(.dark).previewDisplayName("Dark")
+            OnboardingView().previewDisplayName("Dark")
         }
     }
 }

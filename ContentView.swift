@@ -232,7 +232,6 @@ struct ContentView_Previews: PreviewProvider {
         ContentView(viewModel: ActivityListViewModel(context: PersistenceController.preview.container.viewContext))
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
             .environmentObject(NavigationCoordinator())
-            .preferredColorScheme(.dark)
     }
 }
 

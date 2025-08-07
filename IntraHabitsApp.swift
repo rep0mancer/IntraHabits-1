@@ -14,7 +14,6 @@ struct IntraHabitsApp: App {
             RootView(context: persistenceController.container.viewContext)
                 .environment(\.managedObjectContext, persistenceController.container.viewContext)
                 .withNavigationCoordinator()
-                .preferredColorScheme(.dark)
                 .onAppear {
                     setupAppearance()
                     persistenceError = persistenceController.loadError
@@ -133,7 +132,7 @@ class PersistenceController: ObservableObject {
             try viewContext.save()
         } catch {
             let nsError = error as NSError
-            fatalError("Unresolved error \(nsError), \(nsError.userInfo)")
+            AppLogger.error("Preview data save failed: \(nsError), \(nsError.userInfo)")
         }
         return result
     }()

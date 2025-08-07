@@ -10,6 +10,8 @@ class WidgetTimerService: ObservableObject {
     private(set) var isEnabled = true
     
     private var timerStates: [String: WidgetTimerState] = [:]
+    // Repeating timers for widget refreshes keyed by activityId
+    private var updateTimers: [String: Timer] = [:]
     
     private init() {
         if let sharedDefaults = UserDefaults(suiteName: appGroupIdentifier) {
@@ -37,6 +39,11 @@ class WidgetTimerService: ObservableObject {
     
     func getCurrentDuration(for activityId: String) -> TimeInterval {
         return timerStates[activityId]?.currentDuration ?? 0
+    }
+    
+    // Exposed for tests to verify lifecycle of update timers
+    func hasScheduledUpdateTimer(for activityId: String) -> Bool {
+        return updateTimers[activityId] != nil
     }
     
     // MARK: - Timer Actions
@@ -167,20 +174,37 @@ class WidgetTimerService: ObservableObject {
     
     // MARK: - Widget Updates
     private func scheduleTimerUpdates(for activityId: String) {
-        // Schedule periodic widget updates for running timers
+        // Avoid scheduling multiple timers for the same activity
+        if updateTimers[activityId] != nil {
+            return
+        }
+        
+        // Trigger an immediate refresh
         WidgetCenter.shared.reloadTimelines(ofKind: "ActivityTimerWidget")
         WidgetCenter.shared.reloadTimelines(ofKind: "ActivityQuickActionsWidget")
         
-        // Schedule next update in 30 seconds
-        DispatchQueue.main.asyncAfter(deadline: .now() + 30) { [weak self] in
-            if self?.isTimerRunning(for: activityId) == true {
-                self?.scheduleTimerUpdates(for: activityId)
+        // Create a repeating timer to refresh every 30 seconds while running
+        let timer = Timer.scheduledTimer(withTimeInterval: 30, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            if self.isTimerRunning(for: activityId) {
+                WidgetCenter.shared.reloadTimelines(ofKind: "ActivityTimerWidget")
+                WidgetCenter.shared.reloadTimelines(ofKind: "ActivityQuickActionsWidget")
+            } else {
+                // If it is no longer running, clean up this timer
+                self.cancelTimerUpdates(for: activityId)
             }
         }
+        // Ensure the timer fires on common run loop modes to not pause during interactions
+        RunLoop.main.add(timer, forMode: .common)
+        updateTimers[activityId] = timer
     }
     
     private func cancelTimerUpdates(for activityId: String) {
-        // Widget updates will stop automatically when timer is not running
+        if let timer = updateTimers[activityId] {
+            timer.invalidate()
+            updateTimers.removeValue(forKey: activityId)
+        }
+        // Trigger a final refresh to reflect stopped/paused state
         WidgetCenter.shared.reloadTimelines(ofKind: "ActivityTimerWidget")
         WidgetCenter.shared.reloadTimelines(ofKind: "ActivityQuickActionsWidget")
     }
@@ -194,6 +218,7 @@ class WidgetTimerService: ObservableObject {
             if let startTime = state.startTime,
                now.timeIntervalSince(startTime) > maxTimerDuration {
                 timerStates.removeValue(forKey: activityId)
+                cancelTimerUpdates(for: activityId)
             }
         }
         

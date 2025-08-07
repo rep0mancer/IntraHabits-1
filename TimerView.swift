@@ -421,7 +421,6 @@ struct TimerView_Previews: PreviewProvider {
         
         return TimerView(activity: activity)
             .environment(\.managedObjectContext, context)
-            .preferredColorScheme(.dark)
     }
 }
 

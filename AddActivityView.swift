@@ -303,7 +303,6 @@ struct AddActivityView_Previews: PreviewProvider {
         AddActivityView()
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
             .environmentObject(NavigationCoordinator())
-            .preferredColorScheme(.dark)
     }
 }
 

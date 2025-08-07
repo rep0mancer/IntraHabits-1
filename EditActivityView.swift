@@ -313,7 +313,6 @@ struct EditActivityView_Previews: PreviewProvider {
         
         return EditActivityView(activity: activity)
             .environment(\.managedObjectContext, context)
-            .preferredColorScheme(.dark)
     }
 }
 

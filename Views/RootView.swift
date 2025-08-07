@@ -34,8 +34,6 @@ struct RootView_Previews: PreviewProvider {
     static var previews: some View {
         let previewContext = PersistenceController.preview.container.viewContext
         RootView(context: previewContext)
-            .preferredColorScheme(.light)
         RootView(context: previewContext)
-            .preferredColorScheme(.dark)
     }
 }

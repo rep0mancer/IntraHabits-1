@@ -651,7 +651,6 @@ struct StatisticsView_Previews: PreviewProvider {
     static var previews: some View {
         StatisticsView()
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-            .preferredColorScheme(.dark)
     }
 }
 

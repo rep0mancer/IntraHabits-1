@@ -454,7 +454,6 @@ struct ActivityDetailView_Previews: PreviewProvider {
         return ActivityDetailView(activity: activity)
             .environment(\.managedObjectContext, context)
             .environmentObject(NavigationCoordinator())
-            .preferredColorScheme(.dark)
     }
 }
 
