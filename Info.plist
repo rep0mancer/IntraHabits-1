@@ -38,6 +38,8 @@
 <array>
 <string>com.intrahabits.app.sync</string>
 </array>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>We use notifications to remind you about your habits and ongoing timers.</string>
 </dict>
 </plist>
 

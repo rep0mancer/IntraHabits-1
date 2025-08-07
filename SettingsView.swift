@@ -8,6 +8,7 @@ struct SettingsView: View {
     @State private var showingResetConfirmation = false
     @State private var showingResetFinalConfirmation = false
     @State private var showingSyncSettings = false
+    @StateObject private var purchaseManager = PurchaseManager()
     
     var body: some View {
         NavigationView {
@@ -36,6 +37,7 @@ struct SettingsView: View {
         .navigationViewStyle(StackNavigationViewStyle())
         .onAppear {
             viewModel.setContext(viewContext)
+            Task { await viewModel.checkiCloudStatus() }
         }
         .alert("settings.reset.confirmation.title", isPresented: $showingResetConfirmation) {
             Button("settings.reset.confirmation.cancel", role: .cancel) { }
@@ -57,6 +59,21 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingSyncSettings) {
             SyncSettingsView()
+        }
+        // Purchase alerts
+        .alert("paywall.purchase.success.title", isPresented: $purchaseManager.showingPurchaseSuccess) {
+            Button("common.ok") {}
+        } message: {
+            Text("paywall.purchase.success.message")
+        }
+        .alert("paywall.purchase.error.title", isPresented: $purchaseManager.showingPurchaseError) {
+            Button("common.ok") {
+                purchaseManager.errorMessage = nil
+            }
+        } message: {
+            if let errorMessage = purchaseManager.errorMessage {
+                Text(errorMessage)
+            }
         }
     }
     
@@ -155,6 +172,33 @@ struct SettingsView: View {
                     title: "settings.sync.title",
                     subtitle: "settings.sync.subtitle",
                     action: { showingSyncSettings = true }
+                )
+                
+                Divider()
+                    .padding(.leading, 44)
+                
+                // iCloud status message
+                SettingsRow(
+                    icon: "icloud.fill",
+                    title: LocalizedStringKey("iCloud Status: \(viewModel.iCloudStatus)"),
+                    subtitle: "Tap to re-check",
+                    showChevron: false,
+                    action: {
+                        Task { await viewModel.checkiCloudStatus() }
+                    }
+                )
+                
+                Divider()
+                    .padding(.leading, 44)
+                
+                // Restore purchases
+                SettingsRow(
+                    icon: "arrow.clockwise.circle",
+                    title: "settings.restore_purchases.title",
+                    subtitle: "settings.restore_purchases.subtitle",
+                    action: {
+                        Task { await purchaseManager.restorePurchases() }
+                    }
                 )
                 
                 Divider()
@@ -339,7 +383,6 @@ class SettingsViewModel: ObservableObject {
             }
             
             isLoading = false
-            // successMessage = "Data exported successfully" // This line was removed from the new_code, so it's removed here.
             
         } catch {
             errorMessage = error.localizedDescription
@@ -365,7 +408,6 @@ class SettingsViewModel: ObservableObject {
             try context.save()
             
             isLoading = false
-            // successMessage = "All data has been reset" // This line was removed from the new_code, so it's removed here.
             
         } catch {
             errorMessage = error.localizedDescription
@@ -426,7 +468,6 @@ struct SettingsView_Previews: PreviewProvider {
     static var previews: some View {
         SettingsView()
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-            .preferredColorScheme(.dark)
     }
 }
 

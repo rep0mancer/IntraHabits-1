@@ -193,7 +193,6 @@ struct ActivityCard_Previews: PreviewProvider {
         .padding()
         .background(DesignSystem.Colors.background)
         .environment(\.managedObjectContext, context)
-        .preferredColorScheme(.dark)
     }
 }
 

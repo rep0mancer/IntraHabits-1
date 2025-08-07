@@ -344,14 +344,12 @@ struct PaywallView_Previews: PreviewProvider {
         Group {
             PaywallView()
                 .environmentObject(NavigationCoordinator())
-                .preferredColorScheme(.dark)
             
             PaywallTriggerView(currentActivityCount: 5) {
                 // Dismiss action
             }
             .padding()
             .background(DesignSystem.Colors.background)
-            .preferredColorScheme(.dark)
         }
     }
 }

@@ -63,6 +63,5 @@ struct ActivitySessionsListView_Previews: PreviewProvider {
 
         return ActivitySessionsListView(activity: activity)
             .environment(\.managedObjectContext, context)
-            .preferredColorScheme(.dark)
     }
 }

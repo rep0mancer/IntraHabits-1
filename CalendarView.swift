@@ -438,7 +438,6 @@ struct CalendarView_Previews: PreviewProvider {
         CalendarView()
             .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
             .environmentObject(NavigationCoordinator())
-            .preferredColorScheme(.dark)
     }
 }
 

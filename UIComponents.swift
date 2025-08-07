@@ -396,7 +396,6 @@ struct UIComponents_Previews: PreviewProvider {
             .padding()
         }
         .background(DesignSystem.Colors.background)
-        .preferredColorScheme(.dark)
     }
 }
 

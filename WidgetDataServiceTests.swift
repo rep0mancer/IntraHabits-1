@@ -22,7 +22,10 @@ final class WidgetDataServiceTests: XCTestCase {
     }
 
     private func createActivity(name: String, type: ActivityType, color: String, active: Bool = true) -> Activity {
-        guard let context = context else { fatalError("Missing context") }
+        guard let context = context else {
+            XCTFail("Missing context")
+            return Activity()
+        }
         let activity = Activity(context: context)
         activity.id = UUID()
         activity.name = name
@@ -30,6 +33,7 @@ final class WidgetDataServiceTests: XCTestCase {
         activity.color = color
         activity.createdAt = Date()
         activity.isActive = active
+        activity.sortOrder = 0
         return activity
     }
 

@@ -97,7 +97,6 @@ struct CustomSegmentedControl_Previews: PreviewProvider {
         }
         .padding()
         .background(DesignSystem.Colors.background)
-        .preferredColorScheme(.dark)
     }
 }
 
