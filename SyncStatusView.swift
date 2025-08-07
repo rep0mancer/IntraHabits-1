@@ -20,11 +20,11 @@ struct SyncStatusView: View {
         switch sync.status {
         case .idle:
             return NSLocalizedString("sync.status.idle", comment: "")
-        case .running:
+        case .running(_):
             return NSLocalizedString("sync.status.syncing", comment: "")
         case .completed:
             return NSLocalizedString("sync.status.completed", comment: "")
-        case .failed:
+        case .failed(_):
             return NSLocalizedString("sync.status.failed", comment: "")
         }
     }

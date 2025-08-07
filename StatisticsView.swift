@@ -528,7 +528,7 @@ class StatisticsViewModel: ObservableObject {
     private func calculateOverviewStats(sessions: [ActivitySession], timeRange: TimeRange) {
         totalSessions = sessions.count
         
-        let totalTime = sessions.reduce(0) { $0 + ($1.duration ?? 0) }
+        let totalTime = sessions.reduce(0) { $0 + ($1.duration) }
         totalTimeFormatted = formatDuration(totalTime)
         
         let uniqueDays = Set(sessions.compactMap { session in
@@ -548,9 +548,9 @@ class StatisticsViewModel: ObservableObject {
         
         let totalValue = sessions.reduce(0.0) { total, session in
             if session.activity?.isTimerType == true {
-                return total + (session.duration ?? 0)
+                return total + (session.duration)
             } else {
-                return total + (session.numericValue ?? 0)
+                return total + (session.numericValue)
             }
         }
         
@@ -559,9 +559,9 @@ class StatisticsViewModel: ObservableObject {
             
             let activityTotal = activitySessions.reduce(0.0) { total, session in
                 if activity.isTimerType {
-                    return total + (session.duration ?? 0)
+                    return total + (session.duration)
                 } else {
-                    return total + (session.numericValue ?? 0)
+                    return total + (session.numericValue)
                 }
             }
             
@@ -592,11 +592,11 @@ class StatisticsViewModel: ObservableObject {
             }
             
             let totalValue = daySessions.reduce(0.0) { total, session in
-                if session.activity?.isTimerType == true {
-                    return total + (session.duration ?? 0)
-                } else {
-                    return total + (session.numericValue ?? 0)
-                }
+                            if session.activity?.isTimerType == true {
+                return total + (session.duration)
+            } else {
+                return total + (session.numericValue)
+            }
             }
             
             progressData.append(DailyProgress(

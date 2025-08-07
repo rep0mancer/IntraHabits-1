@@ -281,3 +281,9 @@ class PurchaseManager: ObservableObject {
     }
 }
 
+// MARK: - Simple Validation Result (shared)
+struct ValidationResult {
+    let isValid: Bool
+    let errors: [String]
+}
+

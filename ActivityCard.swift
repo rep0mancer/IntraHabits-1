@@ -38,6 +38,10 @@ struct ActivityCard: View {
         .actionSheet(isPresented: $showingStepSelector) {
             stepSelectorActionSheet
         }
+        .onAppear {
+            // Ensure the internal view model is configured with the current activity and context
+            viewModel.setActivity(activity, context: viewContext)
+        }
     }
     
     // MARK: - Activity Info Section

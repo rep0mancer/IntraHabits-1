@@ -64,6 +64,9 @@ struct DesignSystem {
         static let numberLarge = Font.system(.largeTitle, design: .rounded, weight: .bold)
         static let numberMedium = Font.system(.title, design: .rounded, weight: .semibold)
         static let numberSmall = Font.system(.headline, design: .rounded, weight: .medium)
+        
+        // Timer jumbo font
+        static let timerLarge = Font.system(size: 72, weight: .bold, design: .rounded)
     }
     
     // MARK: - Spacing

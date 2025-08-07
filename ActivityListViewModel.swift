@@ -81,6 +81,44 @@ class ActivityCardViewModel: ObservableObject {
         updateDisplayValues()
     }
     
+    // New convenience properties used in various views
+    var todaysFormattedValue: String {
+        guard let activity else { return "0" }
+        return activity.isTimerType ? formattedDuration : "\(todayCount)"
+    }
+    
+    var currentStreak: Int {
+        guard let activity else { return 0 }
+        return activity.currentStreak()
+    }
+
+    // Overload to support +N steps from action sheet with a single save
+    func incrementActivity(by step: Int) {
+        guard step > 0,
+              let activity = activity,
+              let context = viewContext,
+              activity.type == ActivityType.numeric.rawValue else { return }
+
+        let now = Date()
+        for _ in 0..<step {
+            let session = ActivitySession(context: context)
+            session.id = UUID()
+            session.activity = activity
+            session.sessionDate = now
+            session.numericValue = 1.0
+            session.createdAt = now
+            session.isCompleted = true
+        }
+
+        do {
+            updateStreaks(for: activity)
+            try context.save()
+            updateDisplayValues()
+        } catch {
+            AppLogger.error("Error saving sessions: \(error)")
+        }
+    }
+    
     func incrementActivity() {
         guard let activity = activity,
               let context = viewContext,
