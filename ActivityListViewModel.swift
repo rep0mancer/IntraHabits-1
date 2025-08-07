@@ -81,6 +81,23 @@ class ActivityCardViewModel: ObservableObject {
         updateDisplayValues()
     }
     
+    // New convenience properties used in various views
+    var todaysFormattedValue: String {
+        guard let activity else { return "0" }
+        return activity.isTimerType ? formattedDuration : "\(todayCount)"
+    }
+    
+    var currentStreak: Int {
+        guard let activity else { return 0 }
+        return activity.currentStreak()
+    }
+
+    // Overload to support +N steps from action sheet
+    func incrementActivity(by step: Int) {
+        guard step > 0 else { return }
+        for _ in 0..<step { incrementActivity() }
+    }
+    
     func incrementActivity() {
         guard let activity = activity,
               let context = viewContext,

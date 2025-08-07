@@ -105,7 +105,16 @@ struct ContentView: View {
             ScrollView {
                 LazyVStack(spacing: DesignSystem.Spacing.md) {
                     ForEach(viewModel.activities, id: \.id) { activity in
-                        ActivityCard(activity: activity, viewModel: viewModel.cardViewModels[activity.id!]!)
+                        let cardVM: ActivityCardViewModel = {
+                            if let id = activity.id, let vm = viewModel.cardViewModels[id] {
+                                return vm
+                            } else {
+                                let vm = ActivityCardViewModel()
+                                vm.setActivity(activity, context: viewContext)
+                                return vm
+                            }
+                        }()
+                        ActivityCard(activity: activity, viewModel: cardVM)
                             .environment(\.managedObjectContext, viewContext)
                             .onTapGesture {
                                 coordinator.presentActivityDetail(for: activity)
