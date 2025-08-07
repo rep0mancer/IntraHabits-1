@@ -268,7 +268,7 @@ class PurchaseManager: ObservableObject {
         case .success:
             showingPurchaseSuccess = true
         case .nothingToRestore:
-            errorMessage = NSLocalizedString("common.unknown_error", comment: "")
+            errorMessage = NSLocalizedString("storekit.restore.nothing_found", comment: "Message shown when no purchases were found to restore.")
             showingPurchaseError = true
         case .failed(let error):
             errorMessage = error.localizedDescription
