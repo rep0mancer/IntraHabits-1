@@ -193,7 +193,7 @@ struct ContentView: View {
             try viewContext.save()
         } catch {
             // Handle the error appropriately, e.g., show an alert
-            AppLogger.error("Failed to reorder activities: \(error.localizedDescription)")
+            AppLogger.error("Failed to reorder activities: \(error)")
         }
     }
     
