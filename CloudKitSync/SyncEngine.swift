@@ -1,5 +1,6 @@
 import Foundation
 import CloudKit
+import CoreData
 
 /// An actor‑based sync engine that uploads local changes and pulls remote changes
 /// from CloudKit.  This implementation performs delta synchronisation by
@@ -30,6 +31,9 @@ public actor SyncEngine {
 
     /// The key used to store the zone change token in ``defaults``.
     private let zoneChangeTokenKey = "SyncEngine.zoneChangeToken"
+
+    /// Last successful sync date to support simple delta detection for Core Data objects.
+    private let lastSuccessfulSyncDateKey = "SyncEngine.lastSuccessfulSyncDate"
 
     /// The most recently received database change token.  When ``pullRemoteChanges()``
     /// runs it passes this token to CloudKit to request only changes since the
@@ -79,6 +83,23 @@ public actor SyncEngine {
     // progress information.  UI code should observe ``status`` instead.
     private(set) public var syncStatus: SyncStatus = .idle
 
+    // MARK: - Constants
+    private let recordTypeActivity = "Activity"
+    private let recordTypeSession = "ActivitySession"
+
+    // MARK: - Core Data
+    /// Use the app's persistent container. We prefer a background context for sync work.
+    private var persistentContainer: NSPersistentCloudKitContainer {
+        PersistenceController.shared.container
+    }
+
+    private func newBackgroundContext() -> NSManagedObjectContext {
+        let context = persistentContainer.newBackgroundContext()
+        context.mergePolicy = NSMergeByPropertyObjectTrumpMergePolicy
+        context.automaticallyMergesChangesFromParent = true
+        return context
+    }
+
     // MARK: - Initialisation
     /// Creates a new instance of the sync engine.  Injecting the container and
     /// user defaults allows for unit testing and production usage without
@@ -116,39 +137,45 @@ public actor SyncEngine {
         }
     }
 
+    // MARK: - Zone Management
+    private func ensureCustomZoneExists() async throws {
+        // Try to fetch the zone by ID. If it errors, attempt to create it.
+        do {
+            _ = try await privateDatabase.recordZone(withID: customZoneID)
+        } catch {
+            let zone = CKRecordZone(zoneID: customZoneID)
+            _ = try await privateDatabase.modifyRecordZones(recordZonesToSave: [zone], recordZoneIDsToDelete: [])
+        }
+    }
+
     // MARK: - Remote Sync
     /// Pulls down all remote changes since the last successful sync.  This
     /// implementation first requests database level changes to determine which
     /// zones have been modified, then fetches record level changes from the
     /// affected zones.  On completion it persists any updated change tokens.
     public func pullRemoteChanges() async throws {
+        try await ensureCustomZoneExists()
+
         // Fetch database changes using the last known database change token.
         let dbChanges = try await privateDatabase.databaseChanges(since: privateDatabaseChangeToken)
 
-        for zoneID in dbChanges.changedRecordZoneIDs {
+        for zoneID in dbChanges.changedRecordZoneIDs where zoneID == customZoneID {
             // Fetch record level changes for each zone since our stored zone token.
             let zoneChanges = try await privateDatabase.recordZoneChanges(inZoneWith: zoneID,
                                                                           since: zoneChangeToken)
             // Extract changed records into an array.  Each result is a Result<CKRecord, Error>.
             let changedRecords = zoneChanges.recordChanges.compactMap { try? $0.get() }
 
-            // TODO: Process changedRecords and deletedIDs into Core Data.
-            // For the purposes of this refactor we simply log the results to
-            // demonstrate that delta sync is working.
-            AppLogger.info("Changed records: \(changedRecords)")
-            AppLogger.info("Deleted record IDs: \(zoneChanges.recordDeletions.map { $0.recordID })")
+            // Map CKRecords into Core Data
+            try await processChangedRecords(changedRecords)
+
+            // Process deletions
+            try await processDeletions(zoneChanges.recordDeletions.map { $0.recordID })
 
             // Persist the new zone token if one was provided by CloudKit.
             if let newZoneToken = zoneChanges.changeToken {
                 try await self.persistZoneChangeToken(newZoneToken)
             }
-
-            // After persisting the token, delegate to per‑entity download
-            // helpers to process the delta changes.  These methods will
-            // eventually transform CKRecord deltas into managed objects and
-            // delete any removed records.  They are currently stubs.
-            try await downloadActivities()
-            try await downloadSessions()
         }
 
         // Persist the new database change token if one was provided.
@@ -158,16 +185,37 @@ public actor SyncEngine {
     }
 
     // MARK: - Local Sync
-    /// Uploads any local changes to CloudKit.  This stub exists to mirror the
-    /// interface of ``LegacyCloudKitService``; its implementation requires tracking
-    /// changed objects in Core Data and is beyond the scope of this refactor.
+    /// Uploads any local changes to CloudKit.
     public func uploadLocalChanges() async throws {
-        // Delegate uploading into granular helper methods.  These helpers
-        // should locate changed entities in Core Data and convert them
-        // into CKRecord values for submission.  They are currently
-        // stubs pending a full Core Data change tracking mechanism.
-        try await uploadActivities()
-        try await uploadSessions()
+        try await ensureCustomZoneExists()
+
+        let context = newBackgroundContext()
+
+        // Determine last successful sync date for delta uploads.
+        let lastSync: Date? = defaults.object(forKey: lastSuccessfulSyncDateKey) as? Date
+
+        // Upload Activities
+        let activitiesRequest: NSFetchRequest<Activity> = Activity.fetchRequest()
+        activitiesRequest.predicate = predicateForUnsynced(entityName: "Activity", lastSync: lastSync)
+        let activities = try context.performAndWait { () -> [Activity] in
+            try context.fetch(activitiesRequest)
+        }
+        if !activities.isEmpty {
+            try await uploadActivities(activities)
+        }
+
+        // Upload ActivitySessions
+        let sessionsRequest: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
+        sessionsRequest.predicate = predicateForUnsynced(entityName: "ActivitySession", lastSync: lastSync)
+        let sessions = try context.performAndWait { () -> [ActivitySession] in
+            try context.fetch(sessionsRequest)
+        }
+        if !sessions.isEmpty {
+            try await uploadSessions(sessions)
+        }
+
+        // Update last sync date
+        defaults.set(Date(), forKey: lastSuccessfulSyncDateKey)
     }
 
     /// Pushes any unsynchronised local changes to CloudKit.  This method
@@ -177,38 +225,111 @@ public actor SyncEngine {
         try await uploadLocalChanges()
     }
 
-    /// Uploads all modified Activity records to CloudKit.  This helper
-    /// encapsulates the logic for encoding ``Activity`` into CKRecord
-    /// instances and saving them to the private database.  The actual
-    /// implementation will depend on how change tracking is performed in
-    /// Core Data and is thus left as a TODO.
-    private func uploadActivities() async throws {
-        // TODO: Query Core Data for changed Activity objects and save them
-        // to CloudKit.  Use CKModifyRecordsOperation for batch efficiency.
+    // MARK: - Mapping and Processing
+    private func processChangedRecords(_ records: [CKRecord]) async throws {
+        guard !records.isEmpty else { return }
+        let context = newBackgroundContext()
+        try await context.perform {
+            for record in records {
+                switch record.recordType {
+                case self.recordTypeActivity:
+                    try? self.processActivityRecord(record, in: context)
+                case self.recordTypeSession:
+                    try? self.processSessionRecord(record, in: context)
+                default:
+                    break
+                }
+            }
+            if context.hasChanges {
+                try context.save()
+            }
+        }
     }
 
-    /// Uploads all modified ActivitySession records to CloudKit.  Similar to
-    /// ``uploadActivities()``, this helper is responsible for serialising
-    /// ActivitySession objects into CKRecord values and persisting them.
-    private func uploadSessions() async throws {
-        // TODO: Query Core Data for changed ActivitySession objects and save
-        // them to CloudKit.
+    private func processDeletions(_ recordIDs: [CKRecord.ID]) async throws {
+        guard !recordIDs.isEmpty else { return }
+        let context = newBackgroundContext()
+        try await context.perform {
+            for rid in recordIDs {
+                switch rid.recordNamePrefix {
+                case self.recordTypeActivity:
+                    if let uuid = rid.parseUUID() {
+                        let fetch = Activity.activityByIdFetchRequest(uuid)
+                        if let obj = try? context.fetch(fetch).first {
+                            context.delete(obj)
+                        }
+                    }
+                case self.recordTypeSession:
+                    if let uuid = rid.parseUUID() {
+                        let req: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
+                        req.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
+                        if let obj = try? context.fetch(req).first {
+                            context.delete(obj)
+                        }
+                    }
+                default:
+                    break
+                }
+            }
+            if context.hasChanges {
+                try context.save()
+            }
+        }
+    }
+
+    /// Uploads all modified Activity records to CloudKit.
+    private func uploadActivities(_ activities: [Activity]) async throws {
+        for activity in activities {
+            guard let id = activity.id else { continue }
+            let recordID = CKRecord.ID(recordName: "\(recordTypeActivity)-\(id.uuidString)", zoneID: customZoneID)
+            let record = CKRecord(recordType: recordTypeActivity, recordID: recordID)
+            record["id"] = id.uuidString as CKRecordValue
+            record["name"] = (activity.name ?? "") as CKRecordValue
+            record["type"] = (activity.type ?? ActivityType.numeric.rawValue) as CKRecordValue
+            record["color"] = (activity.color ?? "#CD3A2E") as CKRecordValue
+            record["createdAt"] = (activity.createdAt ?? Date()) as CKRecordValue
+            record["updatedAt"] = (activity.updatedAt ?? activity.createdAt ?? Date()) as CKRecordValue
+            record["isActive"] = activity.isActive as CKRecordValue
+            record["sortOrder"] = NSNumber(value: activity.sortOrder)
+            _ = try await privateDatabase.save(record)
+        }
+    }
+
+    /// Uploads all modified ActivitySession records to CloudKit.
+    private func uploadSessions(_ sessions: [ActivitySession]) async throws {
+        for session in sessions {
+            guard let id = session.id else { continue }
+            let recordID = CKRecord.ID(recordName: "\(recordTypeSession)-\(id.uuidString)", zoneID: customZoneID)
+            let record = CKRecord(recordType: recordTypeSession, recordID: recordID)
+            record["id"] = id.uuidString as CKRecordValue
+            record["sessionDate"] = (session.sessionDate ?? Date()) as CKRecordValue
+            record["duration"] = session.duration as CKRecordValue
+            record["numericValue"] = session.numericValue as CKRecordValue
+            record["isCompleted"] = session.isCompleted as CKRecordValue
+            record["createdAt"] = (session.createdAt ?? Date()) as CKRecordValue
+            record["updatedAt"] = (session.updatedAt ?? session.createdAt ?? Date()) as CKRecordValue
+            // Reference to parent activity
+            if let activityId = session.activity?.id {
+                let parentID = CKRecord.ID(recordName: "\(recordTypeActivity)-\(activityId.uuidString)", zoneID: customZoneID)
+                record["activityRef"] = CKRecord.Reference(recordID: parentID, action: .none)
+                record["activityId"] = activityId.uuidString as CKRecordValue
+            }
+            _ = try await privateDatabase.save(record)
+        }
     }
 
     /// Downloads updated Activity records from CloudKit based on the delta
     /// information returned by the ``recordZoneChanges(inZoneWith:since:)`` API.
     /// Implementations should map CKRecords into Core Data managed objects.
     private func downloadActivities() async throws {
-        // TODO: Convert changed CKRecord objects into Activity entities and
-        // persist them in Core Data.  Delete local objects that were removed.
+        // No-op: handled via processChangedRecords()
     }
 
     /// Downloads updated ActivitySession records from CloudKit.  Like
     /// ``downloadActivities()``, this helper handles translating CKRecords
     /// into managed objects and applying deletions.
     private func downloadSessions() async throws {
-        // TODO: Convert changed CKRecord objects into ActivitySession
-        // entities and persist them in Core Data.
+        // No-op: handled via processChangedRecords()
     }
 
     /// Updates the published status to reflect a running sync with the given
@@ -226,35 +347,73 @@ public actor SyncEngine {
     /// ``Activity`` into a ``CKRecord``, and persist it via a modify
     /// operation.
     private func uploadActivities(_ activities: [Activity]) async throws {
-        // TODO: Implement uploading of specific Activity objects.  Use
-        // CKModifyRecordsOperation for efficiency.
+        // Implemented above
+        try await self.uploadActivities(activities)
     }
 
     /// Uploads the provided activity sessions to CloudKit.  See
     /// ``uploadActivities(_:)`` for details.
     private func uploadSessions(_ sessions: [ActivitySession]) async throws {
-        // TODO: Implement uploading of specific ActivitySession objects.
+        // Implemented above
+        try await self.uploadSessions(sessions)
     }
 
     /// Processes a fetched ``CKRecord`` representing an Activity.  A concrete
     /// implementation will map record fields onto an existing or new
     /// ``Activity`` managed object.
-    private func processActivityRecord(_ record: CKRecord) async throws {
-        // TODO: Convert record into Activity and persist to Core Data.
+    private func processActivityRecord(_ record: CKRecord, in context: NSManagedObjectContext) throws {
+        guard let idString = record["id"] as? String, let uuid = UUID(uuidString: idString) else { return }
+        let fetch = Activity.activityByIdFetchRequest(uuid)
+        let activity = try context.fetch(fetch).first ?? Activity(context: context)
+        activity.id = uuid
+        activity.name = record["name"] as? String
+        activity.type = record["type"] as? String
+        activity.color = record["color"] as? String
+        activity.createdAt = record["createdAt"] as? Date
+        activity.updatedAt = record["updatedAt"] as? Date
+        activity.isActive = (record["isActive"] as? NSNumber)?.boolValue ?? true
+        if let sort = record["sortOrder"] as? NSNumber { activity.sortOrder = sort.int32Value }
     }
 
     /// Processes a fetched ``CKRecord`` representing an ActivitySession.
-    private func processSessionRecord(_ record: CKRecord) async throws {
-        // TODO: Convert record into ActivitySession and persist to Core Data.
+    private func processSessionRecord(_ record: CKRecord, in context: NSManagedObjectContext) throws {
+        guard let idString = record["id"] as? String, let uuid = UUID(uuidString: idString) else { return }
+        let req: NSFetchRequest<ActivitySession> = ActivitySession.fetchRequest()
+        req.predicate = NSPredicate(format: "id == %@", uuid as CVarArg)
+        let session = try context.fetch(req).first ?? ActivitySession(context: context)
+        session.id = uuid
+        session.sessionDate = record["sessionDate"] as? Date
+        session.duration = (record["duration"] as? NSNumber)?.doubleValue ?? 0
+        session.numericValue = (record["numericValue"] as? NSNumber)?.doubleValue ?? 0
+        session.isCompleted = (record["isCompleted"] as? NSNumber)?.boolValue ?? false
+        session.createdAt = record["createdAt"] as? Date
+        session.updatedAt = record["updatedAt"] as? Date
+
+        // Link to activity by reference or activityId string
+        if let activityIdString = record["activityId"] as? String, let activityId = UUID(uuidString: activityIdString) {
+            let activityFetch = Activity.activityByIdFetchRequest(activityId)
+            if let activity = try context.fetch(activityFetch).first {
+                session.activity = activity
+            }
+        } else if let ref = record["activityRef"] as? CKRecord.Reference {
+            if let activityUUID = ref.recordID.parseUUID() {
+                let activityFetch = Activity.activityByIdFetchRequest(activityUUID)
+                if let activity = try context.fetch(activityFetch).first {
+                    session.activity = activity
+                }
+            }
+        }
     }
 
     /// Constructs a predicate that matches unsynchronised objects.  The
     /// signature mirrors the deprecated service's helper.  Clients should
     /// supply the entity name and any additional filtering criteria.
     private func predicateForUnsynced(entityName: String, lastSync: Date?) -> NSPredicate {
-        // TODO: Build an NSPredicate that filters objects with a nil
-        // ``syncDate`` or a ``syncDate`` later than ``lastSync``.
-        return NSPredicate(value: true)
+        if let lastSync {
+            return NSPredicate(format: "updatedAt == nil OR updatedAt > %@", lastSync as NSDate)
+        } else {
+            return NSPredicate(value: true)
+        }
     }
 
     // MARK: - Public Sync Entry Point
@@ -322,5 +481,34 @@ public actor SyncEngine {
                                                     requiringSecureCoding: true)
         defaults.set(data, forKey: zoneChangeTokenKey)
         self.zoneChangeToken = token
+    }
+}
+
+// MARK: - CK helpers
+private extension CKDatabase {
+    func recordZone(withID id: CKRecordZone.ID) async throws -> CKRecordZone {
+        try await withCheckedThrowingContinuation { continuation in
+            let op = CKFetchRecordZonesOperation(recordZoneIDs: [id])
+            op.fetchRecordZonesCompletionBlock = { zonesByID, error in
+                if let error { continuation.resume(throwing: error) }
+                else if let zone = zonesByID?[id] { continuation.resume(returning: zone) }
+                else { continuation.resume(throwing: CKError(.zoneNotFound)) }
+            }
+            self.add(op)
+        }
+    }
+}
+
+private extension CKRecord.ID {
+    /// Attempts to parse a UUID from a recordName formatted as "Type-<uuid>".
+    func parseUUID() -> UUID? {
+        let comps = recordName.split(separator: "-")
+        guard let last = comps.last else { return nil }
+        return UUID(uuidString: String(last))
+    }
+
+    var recordNamePrefix: String {
+        let comps = recordName.split(separator: "-")
+        return comps.first.map(String.init) ?? ""
     }
 }

@@ -43,14 +43,16 @@ jobs:
         
     - name: Run unit tests
       run: |
-        xcodebuild test \
-          -project IntraHabits.xcodeproj \
-          -scheme IntraHabits \
-          -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
-          -enableCodeCoverage YES \
-          -derivedDataPath DerivedData \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+                  PROJECT_PATH=$(ls -d *.xcodeproj 2>/dev/null | head -n1)
+          if [ -z "$PROJECT_PATH" ]; then echo "No .xcodeproj found"; exit 1; fi
+          xcodebuild test \
+            -project "$PROJECT_PATH" \
+            -scheme IntraHabits \
+            -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
+            -enableCodeCoverage YES \
+            -derivedDataPath DerivedData \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
           
     - name: Generate code coverage report
       run: |
@@ -122,23 +124,27 @@ jobs:
         
     - name: Build for testing
       run: |
-        xcodebuild build-for-testing \
-          -project IntraHabits.xcodeproj \
-          -scheme IntraHabits \
-          -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
-          -derivedDataPath DerivedData
+                  PROJECT_PATH=$(ls -d *.xcodeproj 2>/dev/null | head -n1)
+          if [ -z "$PROJECT_PATH" ]; then echo "No .xcodeproj found"; exit 1; fi
+          xcodebuild build-for-testing \
+            -project "$PROJECT_PATH" \
+            -scheme IntraHabits \
+            -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
+            -derivedDataPath DerivedData
           
     - name: Build archive
       run: |
-        xcodebuild archive \
-          -project IntraHabits.xcodeproj \
-          -scheme IntraHabits \
-          -destination "generic/platform=iOS" \
-          -archivePath IntraHabits.xcarchive \
-          -derivedDataPath DerivedData \
-          CODE_SIGN_STYLE=Manual \
-          PROVISIONING_PROFILE_SPECIFIER="IntraHabits Enterprise" \
-          CODE_SIGN_IDENTITY="iPhone Distribution: Your Company Name"
+                  PROJECT_PATH=$(ls -d *.xcodeproj 2>/dev/null | head -n1)
+          if [ -z "$PROJECT_PATH" ]; then echo "No .xcodeproj found"; exit 1; fi
+          xcodebuild archive \
+            -project "$PROJECT_PATH" \
+            -scheme IntraHabits \
+            -destination "generic/platform=iOS" \
+            -archivePath IntraHabits.xcarchive \
+            -derivedDataPath DerivedData \
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER="IntraHabits Enterprise" \
+            CODE_SIGN_IDENTITY="iPhone Distribution: Your Company Name"
           
     - name: Export IPA
       run: |
@@ -304,14 +310,16 @@ jobs:
       
     - name: Run performance tests
       run: |
-        xcodebuild test \
-          -project IntraHabits.xcodeproj \
-          -scheme IntraHabits \
-          -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
-          -testPlan PerformanceTests \
-          -derivedDataPath DerivedData \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+                  PROJECT_PATH=$(ls -d *.xcodeproj 2>/dev/null | head -n1)
+          if [ -z "$PROJECT_PATH" ]; then echo "No .xcodeproj found"; exit 1; fi
+          xcodebuild test \
+            -project "$PROJECT_PATH" \
+            -scheme IntraHabits \
+            -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
+            -testPlan PerformanceTests \
+            -derivedDataPath DerivedData \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
           
     - name: Archive performance results
       uses: actions/upload-artifact@v3
@@ -334,14 +342,16 @@ jobs:
       
     - name: Run accessibility tests
       run: |
-        xcodebuild test \
-          -project IntraHabits.xcodeproj \
-          -scheme IntraHabits \
-          -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
-          -testPlan AccessibilityTests \
-          -derivedDataPath DerivedData \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+                  PROJECT_PATH=$(ls -d *.xcodeproj 2>/dev/null | head -n1)
+          if [ -z "$PROJECT_PATH" ]; then echo "No .xcodeproj found"; exit 1; fi
+          xcodebuild test \
+            -project "$PROJECT_PATH" \
+            -scheme IntraHabits \
+            -destination "platform=iOS Simulator,name=${{ env.IOS_SIMULATOR }},OS=${{ env.IOS_VERSION }}" \
+            -testPlan AccessibilityTests \
+            -derivedDataPath DerivedData \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
           
     - name: Archive accessibility results
       uses: actions/upload-artifact@v3
