@@ -92,10 +92,31 @@ class ActivityCardViewModel: ObservableObject {
         return activity.currentStreak()
     }
 
-    // Overload to support +N steps from action sheet
+    // Overload to support +N steps from action sheet with a single save
     func incrementActivity(by step: Int) {
-        guard step > 0 else { return }
-        for _ in 0..<step { incrementActivity() }
+        guard step > 0,
+              let activity = activity,
+              let context = viewContext,
+              activity.type == ActivityType.numeric.rawValue else { return }
+
+        let now = Date()
+        for _ in 0..<step {
+            let session = ActivitySession(context: context)
+            session.id = UUID()
+            session.activity = activity
+            session.sessionDate = now
+            session.numericValue = 1.0
+            session.createdAt = now
+            session.isCompleted = true
+        }
+
+        do {
+            updateStreaks(for: activity)
+            try context.save()
+            updateDisplayValues()
+        } catch {
+            AppLogger.error("Error saving sessions: \(error)")
+        }
     }
     
     func incrementActivity() {
